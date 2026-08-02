@@ -1,22 +1,72 @@
 aid: voygr
-name: Voygr
-description: Voygr is a company surfaced as a portfolio company of y-combinator and added to the API Evangelist
-  network as a stub for enrichment. This profile is a lead awaiting the enrichment pipeline.
+name: VOYGR
+description: >-
+  VOYGR provides real-world place intelligence for AI apps and agents, delivering
+  continuous location and point-of-interest (POI) data validation and enrichment.
+  Its Location Freshness Validation confirms historical existence and current
+  operating status, detecting relocations, rebrands, and closures across multiple
+  attributes with up to 99.62% validation precision and configurable decision
+  thresholds. Its Location Data Enrichment populates and continuously enriches
+  place records from web, social, authoritative, and other sources, spanning
+  foundational attributes (address, contacts, web presence), operating data
+  (hours, menus, prices), and fresh context (articles, reviews, news, events).
+  VOYGR is a Y Combinator (Winter 2026) and SNR.VC backed seed-stage company
+  based in San Francisco, founded by Vlad Baskakov (CEO, ex-Google Maps) and
+  Yarik Markov (CTO, ex-Google/Meta/Apple ML). Its maps API goes beyond the
+  10-15 standard attributes of existing mapping providers. The developer surface
+  is currently demo-gated and no public API documentation is published yet.
 url: https://raw.githubusercontent.com/api-evangelist/voygr/refs/heads/main/apis.yml
+accessModel:
+  pricing: unknown
+  onboarding: unknown
+  trial: false
+  try_now: false
+  public: false
+  label: Unknown
+  confidence: low
+  source: []
+  generated: '2026-07-22'
+  method: derived
+image: https://framerusercontent.com/images/AwhsRnVKsS6stDyzf60Vzj7jew.png
 x-type: company
 x-source: vc-portfolio
 x-backed-by:
 - y-combinator
+- snr-vc
 x-tier: stub
 x-tier-reason: portfolio-lead
 specificationVersion: '0.20'
 created: '2026-07-17'
-modified: '2026-07-17'
+modified: '2026-07-21'
 tags:
 - Company
+- Location Intelligence
+- POI Data
+- Data Enrichment
+- Data Validation
+- Geospatial
+- Places
+- AI Agents
+- Y Combinator
 apis: []
+common:
+- type: DomainSecurity
+  url: security/voygr-domain-security.yml
+- type: Website
+  url: https://voygr.tech/
+- type: PrivacyPolicy
+  url: https://voygr.tech/privacy-policy
+- type: TermsOfService
+  url: https://voygr.tech/terms
+- type: SignUp
+  url: https://voygr.tech/#contacts
 maintainers:
 - FN: Kin Lane
   email: kin@apievangelist.com
 - FN: APIs.json
   email: info@apis.io
+x-enrichment:
+  date: '2026-07-21'
+  status: minimal
+  artifacts_added: 1
+  pass: local-v1
