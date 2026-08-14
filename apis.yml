@@ -10,34 +10,50 @@ description: >-
   place records from web, social, authoritative, and other sources, spanning
   foundational attributes (address, contacts, web presence), operating data
   (hours, menus, prices), and fresh context (articles, reviews, news, events).
-  VOYGR is a Y Combinator (Winter 2026) and SNR.VC backed seed-stage company
-  based in San Francisco, founded by Vlad Baskakov (CEO, ex-Google Maps) and
-  Yarik Markov (CTO, ex-Google/Meta/Apple ML). Its maps API goes beyond the
-  10-15 standard attributes of existing mapping providers. The developer surface
-  is currently demo-gated and no public API documentation is published yet.
+  Two APIs are public and self-serve. The Voygr Calls API (api.voygr.tech)
+  places real outbound phone calls with an AI voice agent — submit a task, the
+  agent dials, conducts the conversation, and returns a structured outcome with
+  a full transcript — which is how VOYGR reaches the businesses that have a
+  phone but no API. The Voygr Business Validation API (dev.voygr.tech) returns
+  existence and open/closed status for a business name and address. Both
+  authenticate with an X-API-Key header, share one prepaid credit balance, and
+  issue keys self-serve by email. VOYGR is a Y Combinator (Winter 2026) and
+  SNR.VC backed seed-stage company based in San Francisco, founded by Vlad
+  Baskakov (CEO, ex-Google Maps) and Yarik Markov (CTO, ex-Google/Meta/Apple ML).
+  Its maps API goes beyond the 10-15 standard attributes of existing mapping
+  providers. The location-data products themselves remain demo-gated on
+  voygr.tech, but the calling and validation APIs are documented, priced, and
+  reachable without a sales conversation.
 url: https://raw.githubusercontent.com/api-evangelist/voygr/refs/heads/main/apis.yml
 accessModel:
-  pricing: unknown
-  onboarding: unknown
-  trial: false
-  try_now: false
-  public: false
-  label: Unknown
-  confidence: low
-  source: []
-  generated: '2026-07-22'
-  method: derived
+  pricing: credits
+  onboarding: self-service
+  trial: true
+  try_now: true
+  public: true
+  label: Self-Service
+  confidence: high
+  source:
+  - https://api.voygr.tech/checkout
+  - https://api.voygr.tech/checkout/packs
+  - https://api.voygr.tech/docs
+  generated: '2026-08-14'
+  method: probed
+  note: >-
+    Free tier of 2,500 credits with no card required; key emailed after a
+    name+email signup. Prepaid credit packs published as machine-readable JSON
+    at /checkout/packs. Credits never expire.
 image: https://framerusercontent.com/images/AwhsRnVKsS6stDyzf60Vzj7jew.png
 x-type: company
 x-source: vc-portfolio
 x-backed-by:
 - y-combinator
 - snr-vc
-x-tier: stub
-x-tier-reason: portfolio-lead
+x-tier: enriched
+x-tier-reason: portfolio-lead-enriched
 specificationVersion: '0.20'
 created: '2026-07-17'
-modified: '2026-07-21'
+modified: '2026-08-14'
 tags:
 - Company
 - Location Intelligence
@@ -47,26 +63,146 @@ tags:
 - Geospatial
 - Places
 - AI Agents
+- Agent Skills
+- Voice AI
+- Telephony
+- Outbound Calls
+- Business Validation
 - Y Combinator
-apis: []
+apis:
+- name: Voygr Calls API
+  description: >-
+    Programmatic outbound phone calls executed by an AI voice agent. Submit a
+    task either as a plain-language brief or as a structured intent plus slots
+    (inquiry, info_gathering, issue_resolution, booking, cancellation); the agent
+    places the call, works through phone trees and hold, conducts the
+    conversation in one of 13 languages, and returns a structured outcome with a
+    full transcript. Calls are asynchronous — poll the call until it reaches a
+    terminal state, or cursor-poll an SSE-formatted event feed for live progress
+    and mid-call questions. A post-call merged transcript is rebuilt from the
+    dual-channel recording. OpenAPI 3.1.0, 13 operations, X-API-Key auth, US
+    destinations only, AI disclosure and recording notice on every call.
+  humanURL: https://api.voygr.tech/docs
+  baseURL: https://api.voygr.tech
+  tags:
+  - voice-ai
+  - telephony
+  - outbound-calls
+  - ai-agents
+  - agent-skills
+  - transcription
+  - booking
+  properties:
+  - type: OpenAPI
+    url: openapi/voygr-calls-api-openapi.yml
+  - type: OpenAPI
+    url: https://api.voygr.tech/openapi.json
+  - type: Documentation
+    url: https://api.voygr.tech/docs
+  - type: APIReference
+    url: https://api.voygr.tech/docs
+  - type: Authentication
+    url: authentication/voygr-authentication.yml
+  - type: Conventions
+    url: conventions/voygr-conventions.yml
+  - type: ErrorCatalog
+    url: errors/voygr-problem-types.yml
+  - type: DataModel
+    url: data-model/voygr-data-model.yml
+  - type: Overlay
+    url: overlays/voygr-calls-api-overlay.yaml
+  - type: AgentSkill
+    url: skills/_index.yml
+- name: Voygr Business Validation API
+  description: >-
+    Business existence and operating-status validation. POST /v1/business-status
+    takes a business name and a full street address and returns existence_status
+    (exists, not_exists, uncertain) and open_closed_status (open, closed,
+    uncertain) with a request_id and an ISO 8601 validation timestamp; GET
+    /v1/usage returns the remaining quota. POST /signup issues an API key by
+    email with no authentication required. Authenticated with the same X-API-Key
+    header and drawn from the same credit balance as the Calls API, at 1 credit
+    per request. Documented in the first-party dev-tools README and wrapped by
+    the official voygr CLI and Python client; no OpenAPI is published for this
+    surface.
+  humanURL: https://github.com/voygr-tech/dev-tools#api-reference
+  baseURL: https://dev.voygr.tech
+  x-base-url-note: >-
+    `dev.voygr.tech` reads like a non-production host but it IS the production
+    base URL VOYGR publishes for this API: it is the hardcoded CLI/library
+    default in voygr-tech/dev-tools (src/voygr/cli.py), the "Base URL" in that
+    repo's API reference, and the Homepage on the PyPI package. It also serves a
+    byte-identical copy of the Calls API OpenAPI. Do not "repair" it to
+    api.voygr.tech — that would point this entry at a different contract.
+  tags:
+  - data-validation
+  - poi-data
+  - places
+  - location-intelligence
+  - business-status
+  properties:
+  - type: Documentation
+    url: https://github.com/voygr-tech/dev-tools#readme
+  - type: APIReference
+    url: https://github.com/voygr-tech/dev-tools#api-reference
+  - type: SourceCode
+    url: https://github.com/voygr-tech/dev-tools
+  - type: CLI
+    url: cli/voygr-cli.yml
+  - type: Authentication
+    url: authentication/voygr-authentication.yml
 common:
-- type: DomainSecurity
-  url: security/voygr-domain-security.yml
 - type: Website
   url: https://voygr.tech/
+- type: DeveloperPortal
+  url: https://api.voygr.tech/docs
+- type: Documentation
+  url: https://api.voygr.tech/docs
+- type: APIReference
+  url: https://api.voygr.tech/docs
+- type: GettingStarted
+  url: https://github.com/voygr-tech/callwright-skill#readme
+- type: SignUp
+  url: https://api.voygr.tech/checkout
+- type: Pricing
+  url: https://api.voygr.tech/checkout
+- type: Plans
+  url: plans/voygr-plans-pricing.yml
+- type: RateLimits
+  url: rate-limits/voygr-rate-limits.yml
+- type: Support
+  url: mailto:support@voygr.tech
+- type: GitHubOrganization
+  url: https://github.com/voygr-tech
+- type: SDKs
+  url: packages/voygr-packages.yml
+- type: Packages
+  url: packages/voygr-packages.yml
+- type: CLI
+  url: cli/voygr-cli.yml
+- type: AgentSkill
+  url: skills/_index.yml
+- type: LLMsTxt
+  url: llms/voygr-llms.txt
+- type: Lifecycle
+  url: lifecycle/voygr-lifecycle.yml
+- type: Conformance
+  url: conformance/voygr-conformance.yml
+- type: DomainSecurity
+  url: security/voygr-domain-security.yml
 - type: PrivacyPolicy
   url: https://voygr.tech/privacy-policy
 - type: TermsOfService
   url: https://voygr.tech/terms
-- type: SignUp
-  url: https://voygr.tech/#contacts
+- type: TermsOfService
+  url: https://voygr.tech/terms-api
 maintainers:
 - FN: Kin Lane
   email: kin@apievangelist.com
 - FN: APIs.json
   email: info@apis.io
 x-enrichment:
-  date: '2026-07-21'
-  status: minimal
-  artifacts_added: 1
+  date: '2026-08-14'
+  status: enriched
+  artifacts_added: 19
   pass: local-v1
