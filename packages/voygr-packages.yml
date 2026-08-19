@@ -1,0 +1,60 @@
+generated: '2026-08-14'
+method: searched
+source: https://pypi.org/pypi/voygr/json + https://github.com/voygr-tech/dev-tools
+note: >-
+  One first-party client library found. Probed npm (registry search "voygr",
+  @voygr/sdk), PyPI (voygr, voygr-sdk, voygr-client, callwright), RubyGems
+  (voygr) and crates.io (voygr) — only the PyPI `voygr` package exists. The npm
+  package named `callwright` is NOT VOYGR's: it is topness/callwright, a
+  different vendor built on Retell, and is deliberately excluded.
+packages:
+- language: python
+  registry: pypi
+  name: voygr
+  url: https://pypi.org/project/voygr/
+  install: pip install voygr
+  official: true
+  version: 0.2.1
+  published: '2026-04-06'
+  source_code: https://github.com/voygr-tech/dev-tools
+  license: MIT
+  provides:
+  - python-client
+  - cli
+  covers_api: Voygr Business Validation API (POST /v1/business-status, GET /v1/usage, POST /signup)
+  note: >-
+    CURRENCY GAP — the published PyPI release is 0.2.1 (2026-04-06); the
+    pyproject.toml on the dev-tools main branch already declares version 0.3.0,
+    which has never been published to PyPI. The package also targets only the
+    Business Validation API at https://dev.voygr.tech; it has no client for the
+    Voygr Calls API (POST /calls et al.) that api.voygr.tech/openapi.json
+    documents, so the SDK lags the shipped API surface.
+absent:
+- registry: npm
+  searched:
+  - voygr
+  - '@voygr/sdk'
+  result: no first-party package
+- registry: pypi
+  searched:
+  - voygr-sdk
+  - voygr-client
+  - callwright
+  result: 404
+- registry: rubygems
+  searched:
+  - voygr
+  result: 404
+- registry: crates.io
+  searched:
+  - voygr
+  result: 403 (crates.io denied the unauthenticated probe; no package known from the docs either)
+- registry: maven-central
+  searched: []
+  result: no Java/Kotlin SDK referenced anywhere in VOYGR docs or repos
+- registry: nuget
+  searched: []
+  result: no .NET SDK referenced anywhere in VOYGR docs or repos
+- registry: go
+  searched: []
+  result: no Go module referenced anywhere in VOYGR docs or repos

@@ -1,0 +1,100 @@
+generated: '2026-08-14'
+method: searched
+source: https://github.com/voygr-tech/dev-tools (README.md, src/voygr/cli.py, pyproject.toml)
+cli:
+  name: voygr
+  description: >-
+    First-party CLI and Python client for the Voygr Business Validation API.
+    Distributed as the `voygr` PyPI package; the console entry point is declared
+    in pyproject.toml as `voygr = "voygr.cli:cli"`.
+  official: true
+  language: python
+  requires: Python 3.10+
+  license: MIT
+  repository: https://github.com/voygr-tech/dev-tools
+  docs: https://github.com/voygr-tech/dev-tools#readme
+  version: 0.2.1
+  published: '2026-04-06'
+install:
+- method: pypi
+  command: pip install voygr
+default_base_url: https://dev.voygr.tech
+auth:
+  header: X-API-Key
+  resolution_order:
+  - --api-key flag
+  - VOYGR_API_KEY environment variable
+  - ~/.config/voygr/config.json
+commands:
+- name: signup
+  usage: voygr signup <email> [--name NAME]
+  description: Request an API key; the key is emailed, never printed.
+  auth_required: false
+  api: POST /signup
+- name: recover
+  usage: voygr recover <email>
+  description: >-
+    Request a recovery link. Clicking it ROTATES the key — the old one stops
+    working immediately. Response is uniform whether or not the email is
+    registered, so it cannot enumerate accounts.
+  auth_required: false
+- name: login
+  usage: voygr login <api-key>
+  description: Store the API key at ~/.config/voygr/config.json.
+  auth_required: false
+- name: logout
+  usage: voygr logout
+  description: Remove the stored API key.
+  auth_required: false
+- name: check
+  usage: voygr check <name> <address>
+  description: >-
+    Check whether a business exists at an address and whether it is open or
+    closed. existence_status is exists|not_exists|uncertain;
+    open_closed_status is open|closed|uncertain.
+  auth_required: true
+  api: POST /v1/business-status
+- name: check --file
+  usage: voygr check --file <csv>
+  description: >-
+    Batch mode over a CSV with name,address columns. Output is JSONL, one object
+    per row; exit code 1 if any row fails. Failed rows echo input_name and
+    input_address for traceability.
+  auth_required: true
+- name: usage
+  usage: voygr usage
+  description: Remaining validation quota (quota_limit, current_usage, remaining, percentage_used, period, status).
+  auth_required: true
+  api: GET /v1/usage
+- name: completions
+  usage: voygr completions [bash|zsh|fish]
+  description: Print shell completion setup instructions.
+  auth_required: false
+global_flags:
+- flag: --api-key KEY
+  description: API key for this request; overrides env var and config file.
+- flag: --base-url URL
+  description: API base URL. Defaults to https://dev.voygr.tech.
+- flag: --human
+  description: Human-readable output. Default is compact JSON.
+- flag: --debug
+  description: Print HTTP request details to stderr.
+- flag: --version
+  description: Show version and exit.
+environment:
+- VOYGR_API_KEY
+- VOYGR_BASE_URL
+exit_codes:
+- code: 0
+  meaning: success
+- code: 1
+  meaning: API error (bad request, auth failure, quota exceeded, network error)
+- code: 2
+  meaning: user error (missing argument, invalid flag)
+retry:
+  cli: always on — exponential backoff, up to 3 attempts, on 429 and 5xx
+  library: off by default (retries=0); pass retries=N to Client()
+note: >-
+  The CLI covers the Business Validation API only. It has no commands for the
+  Voygr Calls API documented at https://api.voygr.tech/openapi.json — for that
+  surface the provider ships an agent skill (skills/) rather than a CLI.

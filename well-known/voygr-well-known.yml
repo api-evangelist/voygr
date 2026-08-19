@@ -1,0 +1,62 @@
+generated: '2026-08-14'
+method: probed
+source: live HTTP probes, 2026-08-14
+note: >-
+  Every /.well-known/ path 404s on every VOYGR host. NO WellKnown, APICatalog or
+  SecurityTxt pointer is emitted in apis.yml — this file records a verified
+  absence, not a served surface. The API hosts return a genuine JSON 404
+  ({"detail":"Not Found"}) rather than an HTML SPA shell, so these are true
+  misses and not soft-404 false credit. voygr.tech is a Framer-hosted marketing
+  site and returns its own HTML 404 page.
+hosts:
+- host: https://api.voygr.tech
+  documents:
+  - path: /.well-known/security.txt
+    status: 404
+  - path: /.well-known/openid-configuration
+    status: 404
+  - path: /.well-known/oauth-authorization-server
+    status: 404
+  - path: /.well-known/oauth-protected-resource
+    status: 404
+  - path: /.well-known/api-catalog
+    status: 404
+  - path: /.well-known/ai-plugin.json
+    status: 404
+  - path: /.well-known/agent-card.json
+    status: 404
+  - path: /.well-known/agent.json
+    status: 404
+- host: https://dev.voygr.tech
+  documents:
+  - path: /.well-known/security.txt
+    status: 404
+  - path: /.well-known/agent-card.json
+    status: 404
+  - path: /.well-known/agent.json
+    status: 404
+- host: https://voygr.tech
+  documents:
+  - path: /.well-known/security.txt
+    status: 404
+  - path: /.well-known/openid-configuration
+    status: 404
+  - path: /.well-known/oauth-authorization-server
+    status: 404
+  - path: /.well-known/api-catalog
+    status: 404
+  - path: /.well-known/ai-plugin.json
+    status: 404
+  - path: /.well-known/agent-card.json
+    status: 404
+  - path: /.well-known/agent.json
+    status: 404
+  - path: /security.txt
+    status: 404
+  - path: /llms.txt
+    status: 404
+  - path: /robots.txt
+    status: 200
+    note: >-
+      Served, but it is a two-line allow-all plus a sitemap reference — not a
+      /.well-known/ document, so it earns no pointer.

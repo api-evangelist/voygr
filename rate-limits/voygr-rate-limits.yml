@@ -1,0 +1,118 @@
+generated: '2026-08-14'
+method: searched
+source: >-
+  https://api.voygr.tech/openapi.json (info.description "## Limits" and the 429
+  response description on POST /calls),
+  https://github.com/voygr-tech/callwright-skill (README.md, SKILL.md)
+docs: https://api.voygr.tech/docs
+limit_count: 5
+rate_limits:
+- id: free-per-second
+  scope: per-key
+  tier: free
+  window: 1s
+  limit: 5
+  unit: requests
+  status_on_exhaustion: 429
+  error_code: RATE_LIMIT_ERROR
+- id: free-per-minute
+  scope: per-key
+  tier: free
+  window: 60s
+  limit: 10
+  unit: requests
+  status_on_exhaustion: 429
+  error_code: RATE_LIMIT_ERROR
+- id: paid-per-second
+  scope: per-key
+  tier: paid
+  window: 1s
+  limit: 10
+  unit: requests
+  status_on_exhaustion: 429
+  error_code: RATE_LIMIT_ERROR
+- id: paid-per-minute
+  scope: per-key
+  tier: paid
+  window: 60s
+  limit: 100
+  unit: requests
+  status_on_exhaustion: 429
+  error_code: RATE_LIMIT_ERROR
+- id: concurrent-calls
+  scope: per-key
+  window: concurrent
+  limit: 2
+  unit: calls in flight
+  note: >-
+    "typically 2" per the spec; the exact cap is returned per key as
+    max_concurrent_calls on GET /users/me.
+  status_on_exhaustion: 409
+  response_field: active_call_ids
+daily_call_caps:
+- tier: free
+  limit: 25
+  unit: calls/day
+  source: https://github.com/voygr-tech/callwright-skill README + SKILL.md
+- tier: paid
+  limit: 5000
+  unit: calls/day
+  note: Any credit purchase lifts the cap; credits then become the practical limit.
+response_headers:
+  observed: []
+  probed:
+  - url: https://api.voygr.tech/health
+    status: 200
+    headers_present:
+    - date
+    - content-type
+    - content-length
+    - set-cookie
+    - server
+  - url: https://api.voygr.tech/users/me
+    status: 401
+    headers_present:
+    - date
+    - content-type
+    - content-length
+    - set-cookie
+    - server
+  finding: >-
+    NO runtime rate-limit signal. Live responses carry no RateLimit-*, no
+    X-RateLimit-*, and no Retry-After. The strings "RateLimit", "Retry-After"
+    and "retry_after" appear nowhere in the published OpenAPI. An agent cannot
+    learn its remaining budget from a response — it must either read the numbers
+    out of prose documentation or poll GET /v1/usage / GET /users/me. This is
+    the largest agent-readiness gap on the runtime surface.
+    (Probed 2026-08-14; `server: voygr-gateway` behind an AWS ALB.)
+quota_endpoints:
+- operation: get_usage_v1_usage_get
+  path: GET /v1/usage
+  returns:
+  - available
+  - call_credit_hold
+  - quota_limit
+  - current_usage
+  - remaining
+  - percentage_used
+  - tier
+  note: '`available // call_credit_hold` is how many calls can be started.'
+- operation: get_me
+  path: GET /users/me
+  returns:
+  - customer_id
+  - quota_limit
+  - current_usage
+  - credits_available
+  - credits_held
+  - max_concurrent_calls
+maintenance:
+  status: 503
+  field: resume_at
+  note: Service maintenance windows return 503 with a resume_at timestamp.
+client_retry_behavior:
+  provider_published: true
+  source: https://github.com/voygr-tech/dev-tools
+  detail: >-
+    The first-party CLI always retries 429 and 5xx with exponential backoff, up
+    to 3 attempts. The Python library ships with retries=0 by default.

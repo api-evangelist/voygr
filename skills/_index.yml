@@ -1,0 +1,68 @@
+generated: '2026-08-14'
+method: searched
+source: https://github.com/voygr-tech/callwright-skill
+note: >-
+  PROVIDER-PUBLISHED, saved VERBATIM. VOYGR publishes its own packaged Agent
+  Skill — nothing here was authored or derived by API Evangelist. The repo is
+  linked from the provider's own API docs banner at https://api.voygr.tech/docs
+  ("Give your agent a phone: callwright-skill") and from the checkout page, so
+  its first-party provenance is established by the provider, not inferred.
+  Two files ship the same reference for two agent runtimes: SKILL.md for Claude
+  Code / Agent Skills, AGENTS.md for Codex.
+skills:
+- name: callwright
+  file: voygr-callwright.md
+  format: agent-skill
+  version: 5.2.1
+  author: voygr-tech
+  license: MIT
+  runtime: Claude Code (skills/), any agent with a shell tool
+  api: Voygr Calls API
+  base_url: https://api.voygr.tech
+  auth: X-API-Key header, env var CALLWRIGHT_API_KEY
+  source: https://github.com/voygr-tech/callwright-skill/blob/main/skills/callwright/SKILL.md
+  description: >-
+    Places real outbound voice calls via the callwright REST API and follows the
+    call through to a structured outcome and transcript.
+  operations:
+  - create_call
+  - get_call
+  - get_call_events
+  - answer_call
+  - cancel_call
+  - get_transcript_merged
+  - rebuild_transcript_merged
+  - get_skill_manifest
+  - get_me
+- name: callwright-agents-md
+  file: voygr-callwright-AGENTS.md
+  format: AGENTS.md
+  runtime: Codex and other AGENTS.md-based agents
+  license: MIT
+  source: https://github.com/voygr-tech/callwright-skill/blob/main/AGENTS.md
+  description: >-
+    The same callwright reference packaged as an AGENTS.md drop-in for
+    Codex-style agents.
+  operations:
+  - create_call
+  - get_call
+  - get_call_events
+  - answer_call
+  - cancel_call
+install:
+  claude_code: >-
+    git clone https://github.com/voygr-tech/callwright-skill && cd
+    callwright-skill && ./install.sh
+  codex: >-
+    python3 install-skill-from-github.py --repo voygr-tech/callwright-skill
+    --path skills/callwright
+  plain_shell: >-
+    No install needed — the API is plain HTTP; SKILL.md is the full reference.
+verification:
+  operationIds_checked_against: openapi/_original/voygr-calls-api-openapi.json
+  result: >-
+    Every endpoint the skill instructs an agent to call (POST /calls, GET
+    /calls/{id}, GET /calls/{id}/events, POST /calls/{id}/answer, POST
+    /calls/{id}/cancel, GET /calls/{id}/transcript-merged, POST
+    /calls/{id}/transcript-merged/rebuild, GET /skills/{id}/manifest, GET
+    /users/me) exists in the published OpenAPI. The skill and the contract agree.

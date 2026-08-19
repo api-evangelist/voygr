@@ -1,0 +1,256 @@
+generated: '2026-08-14'
+method: derived
+source: >-
+  openapi/_original/voygr-calls-api-openapi.json (4xx/5xx responses, response
+  examples, components.schemas.ErrorResponse) enriched from
+  https://github.com/voygr-tech/dev-tools README error tables and
+  https://github.com/voygr-tech/callwright-skill SKILL.md
+format: vendor-json
+rfc9457: false
+note: >-
+  VOYGR does NOT use RFC 9457 problem+json. Every error is a vendor JSON
+  envelope served as application/json. There are two different envelopes across
+  the two APIs, and a third shape (FastAPI's `detail`) leaks through on
+  unrouted paths and on the gateway's own auth rejection — an agent must handle
+  all three.
+envelopes:
+- id: error-response
+  used_by: Voygr Calls API (documented 4xx/5xx) and Business Validation API
+  content_type: application/json
+  schema: components.schemas.ErrorResponse
+  fields:
+  - name: success
+    type: boolean
+    note: always false for errors
+  - name: error
+    type: string
+    note: human-readable message (the only required field)
+  - name: error_code
+    type: string|null
+    note: error category code
+  - name: request_id
+    type: string|null
+    note: trace id — quote this to support
+  - name: validation_timestamp
+    type: string|null
+    note: ISO 8601 UTC timestamp the error was produced
+  - name: detail
+    type: object|null
+    note: additional structured detail (e.g. missing_slots, active_call_ids)
+  example:
+    success: false
+    error: API key required. Include X-API-Key header.
+    error_code: AUTHENTICATION_ERROR
+    request_id: ad33009a-fdfe-4e25-9650-4a49099c3d4a
+- id: fastapi-detail
+  used_by: unrouted paths and the gateway auth check
+  content_type: application/json
+  fields:
+  - name: detail
+    type: string|object
+  observed:
+  - url: https://api.voygr.tech/
+    status: 404
+    body: '{"detail":"Not Found"}'
+  - url: https://api.voygr.tech/skills
+    status: 401
+    body: '{"detail":{"error":"API key required"}}'
+  note: >-
+    PROBED 2026-08-14. This shape is not documented anywhere and does not match
+    ErrorResponse. A client written against the documented envelope will fail to
+    read `error_code` on these responses.
+- id: http-validation-error
+  used_by: Pydantic request validation (422)
+  content_type: application/json
+  schema: components.schemas.HTTPValidationError
+  fields:
+  - name: detail
+    type: array of ValidationError {loc, msg, type}
+problem_types:
+- status: 400
+  error_code: VALIDATION_ERROR
+  title: Invalid request
+  operations:
+  - list_calls
+  detail: '`limit` outside 1..1000.'
+  remediation: Send limit between 1 and 1000.
+- status: 401
+  error_code: AUTHENTICATION_ERROR
+  title: Missing API key
+  operations:
+  - create_call
+  - list_calls
+  - get_call
+  - answer_call
+  - get_call_events
+  - get_transcript_merged
+  - rebuild_transcript_merged
+  - cancel_call
+  - list_skills
+  - get_skill_manifest
+  - get_me
+  - get_usage_v1_usage_get
+  detail: X-API-Key header absent.
+  remediation: 'Send the X-API-Key header on every request.'
+  retryable: false
+- status: 402
+  error_code: QUOTA_EXCEEDED
+  title: Insufficient credits
+  operations:
+  - create_call
+  detail: >-
+    Available balance cannot cover the 30-credit hold taken at dial time. Fires
+    even with a non-zero balance, and fires BEFORE slot validation — so an
+    incomplete structured submission on an underfunded key returns 402, not 422.
+  remediation: >-
+    Check GET /users/me or GET /v1/usage (`available`, `call_credit_hold`); top
+    up at https://api.voygr.tech/checkout.
+  retryable: false
+- status: 403
+  error_code: AUTHENTICATION_ERROR
+  title: Invalid, revoked, or unauthorized key
+  operations:
+  - create_call
+  - get_usage_v1_usage_get
+  detail: Key exists but is revoked or not permitted to make this request.
+  remediation: Recover/rotate the key at https://api.voygr.tech/recover.
+  retryable: false
+- status: 404
+  error_code: null
+  title: Call, skill or resource not found
+  operations:
+  - get_call
+  - get_call_events
+  - get_transcript_merged
+  - rebuild_transcript_merged
+  - cancel_call
+  - get_skill_manifest
+  detail: >-
+    Not found, or not owned by this key. For transcript operations 404 is also
+    returned when the callee declined recording, so there is no verbatim
+    transcript to merge — an ownership 404 and a consent 404 are
+    indistinguishable to the caller.
+  remediation: Verify the call_id belongs to this key; treat transcript 404 as terminal.
+  retryable: false
+- status: 409
+  error_code: null
+  title: Concurrent-call cap reached
+  operations:
+  - create_call
+  detail: >-
+    The key already has the maximum number of calls in flight (typically 2). The
+    body carries `active_call_ids`.
+  remediation: Wait for an active call to reach a terminal state, or cancel one.
+  retryable: true
+- status: 422
+  error_code: missing_brief
+  title: Freeform submission with no brief
+  operations:
+  - create_call
+  remediation: Supply `brief`, or switch to the structured intent+slots path.
+- status: 422
+  error_code: missing_slots
+  title: Structured submission missing required slots
+  operations:
+  - create_call
+  detail: >-
+    Lists exactly which slots are missing, each with a `suggested_question` to
+    relay to the end user. Validation never dials and never charges.
+  remediation: Collect the missing slots and resubmit.
+- status: 422
+  error_code: invalid_slots
+  title: Structured submission with invalid slot values
+  operations:
+  - create_call
+  remediation: Correct the slot values against GET /skills/{skill_id}/manifest.
+- status: 422
+  error_code: unknown_intent
+  title: Unrecognized intent
+  operations:
+  - create_call
+  detail: 'Supported: inquiry, info_gathering, issue_resolution, booking, cancellation.'
+- status: 422
+  error_code: unsupported_language
+  title: Unsupported language code
+  operations:
+  - create_call
+  detail: >-
+    Accepted: en, es, fr, de, hi, ru, pt, ja, it, nl, sr, tr, pl, auto (default).
+    Anything else is a fast 422 before dialing.
+- status: 422
+  error_code: freeform_disabled
+  title: Freeform path disabled for this key
+  operations:
+  - create_call
+  remediation: Use the structured intent+slots path.
+- status: 425
+  error_code: null
+  title: Recording not available yet
+  operations:
+  - rebuild_transcript_merged
+  detail: The call may still be finalizing. Nothing failed.
+  remediation: Retry shortly.
+  retryable: true
+- status: 429
+  error_code: RATE_LIMIT_ERROR
+  title: Rate limited
+  operations:
+  - create_call
+  detail: 'Free keys: 5 req/s, 10 req/min. Paid keys: 10 req/s, 100 req/min.'
+  remediation: >-
+    Back off and retry. NOTE — no Retry-After and no RateLimit-* headers were
+    observed on live responses (see rate-limits/voygr-rate-limits.yml), so the
+    client must implement its own backoff.
+  retryable: true
+- status: 503
+  error_code: null
+  title: Maintenance window
+  operations:
+  - create_call
+  detail: Body carries a `resume_at` timestamp.
+  remediation: Retry after resume_at.
+  retryable: true
+- status: 503
+  error_code: null
+  title: Rebuild dependency failure
+  operations:
+  - rebuild_transcript_merged
+  remediation: Safe to retry.
+  retryable: true
+- status: 504
+  error_code: BACKEND_TIMEOUT
+  title: Gateway gave up waiting for the rebuild
+  operations:
+  - rebuild_transcript_merged
+  detail: >-
+    The rebuild usually still completes and persists on the backend — this is a
+    gateway timeout, not a failed rebuild.
+  remediation: Re-GET the merged transcript shortly rather than rebuilding again.
+  retryable: true
+business_validation_api_codes:
+  source: https://github.com/voygr-tech/dev-tools#error-responses
+  note: Second surface, same envelope, separate code vocabulary.
+  codes:
+  - status: 400
+    error_code: VALIDATION_ERROR
+    meaning: Invalid request body.
+  - status: 401
+    error_code: AUTHENTICATION_ERROR
+    meaning: Missing API key.
+  - status: 402
+    error_code: QUOTA_EXCEEDED
+    meaning: No validations remaining.
+  - status: 403
+    error_code: AUTHENTICATION_ERROR
+    meaning: Invalid or revoked API key.
+  - status: 429
+    error_code: RATE_LIMIT_ERROR
+    meaning: Too many requests.
+declared_but_undocumented_codes:
+  source: components.schemas.ErrorResponse.error_code description
+  codes:
+  - MODEL_ERROR
+  - EXTERNAL_API_ERROR
+  note: >-
+    Named in the schema description as example categories but never attached to
+    a documented response. Recorded as-is; no meaning is invented for them.

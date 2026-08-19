@@ -1,0 +1,209 @@
+generated: '2026-08-14'
+method: searched
+source: >-
+  https://api.voygr.tech/openapi.json (info.description + per-operation
+  descriptions), https://github.com/voygr-tech/callwright-skill (SKILL.md,
+  AGENTS.md), https://github.com/voygr-tech/dev-tools (README.md), plus live
+  header probes 2026-08-14
+docs: https://api.voygr.tech/docs
+auth:
+  style: api-key-header
+  header: X-API-Key
+  see: authentication/voygr-authentication.yml
+idempotency:
+  supported: false
+  idempotency_key_header: null
+  detail: >-
+    NO idempotency key mechanism exists. POST /calls has no Idempotency-Key
+    header and no client-supplied request id, so a retried create is a SECOND
+    REAL PHONE CALL to a real person and a second 30-credit hold. This is the
+    most consequential convention gap in the API: the one operation with an
+    irreversible physical side effect is the one with no replay protection.
+  safe_to_repeat_operations:
+  - operationId: cancel_call
+    note: >-
+      Returns the same shape when the call already reached a terminal state —
+      "safe to call idempotently" per the spec.
+  - operationId: rebuild_transcript_merged
+    note: >-
+      "Idempotent — it rebuilds from the recording and overwrites what was
+      stored." Not free: each request costs a full transcription pass.
+  - operationId: answer_call
+    note: >-
+      A stale retry is absorbed rather than erroring — the response carries
+      reason `no_pending_request` (already answered, expired after ~60s, or
+      unknown) and the answer is silently dropped. Not an error.
+  no_idempotency_pointer_emitted: true
+  pointer_note: >-
+    apis.yml deliberately carries NO `type: Idempotency` pointer. Two read-side
+    operations being replay-safe is not idempotency support; asserting it would
+    credit VOYGR for a guarantee POST /calls does not make.
+pagination:
+  style: limit-only
+  operations:
+  - list_calls
+  parameters:
+  - name: limit
+    in: query
+    range: 1..1000
+    default: unspecified
+    error: 400 when outside 1..1000
+  cursor: null
+  offset: null
+  total_count: null
+  detail: >-
+    There is no cursor, no offset, no next-page link and no total count. Once a
+    key has more than 1,000 calls, the older ones are unreachable through
+    GET /calls. Callers must persist call_ids themselves.
+async_and_polling:
+  model: submit-then-poll
+  detail: >-
+    Calls are asynchronous. POST /calls returns 201 (or 202 on queueing
+    deployments) and the caller polls GET /calls/{call_id} until status is
+    completed, failed or cancelled — typically 30-90 seconds. The terminal
+    response carries outcome_type, outcome_summary and transcript_full, but
+    these can populate a moment AFTER the status flips, so poll until
+    outcome_type is non-null.
+  progress_events:
+    operation: get_call_events
+    path: GET /calls/{call_id}/events?after_event_id=N
+    content_type: text/event-stream
+    style: cursor-polled, NOT a held stream
+    cursor: >-
+      after_event_id query parameter, advanced to the last `id:` received. The
+      gateway strips the Last-Event-ID header, so the query cursor is the only
+      working mechanism.
+    warning: Do not hold a long-lived stream open — issue short requests.
+    empty_body: returned when there are no new events
+  human_in_the_loop:
+    detail: >-
+      Create the call with ask_user_mode "stream" to receive mid-call `ask_user`
+      events; respond with POST /calls/{call_id}/answer. A pending question
+      expires after ~60 seconds.
+webhooks:
+  supported: false
+  detail: >-
+    Stated explicitly in the spec: "There is no completion webhook." Every
+    integration is polling-based. No AsyncAPI and no webhook catalog exist, so
+    asyncapi/ is not emitted.
+request_shapes:
+  detail: >-
+    POST /calls accepts two mutually exclusive request shapes and the SUCCESS
+    ENVELOPE DIFFERS BY SHAPE — an unusual convention a client must branch on.
+  shapes:
+  - name: freeform
+    fields:
+    - target_phone
+    - brief
+    - language
+    envelope: nested — the call object is under `call`, so the id is at call.call_id
+  - name: structured
+    fields:
+    - intent
+    - slots
+    envelope: flat — top-level call_id, status_url, answer_url
+    intents:
+    - id: inquiry
+      required_slots:
+      - target_phone
+      - question
+    - id: info_gathering
+      required_slots:
+      - target_phone
+      - questions
+    - id: issue_resolution
+      required_slots:
+      - target_phone
+      - issue_description
+    - id: booking
+      required_slots:
+      - target_phone
+      - name
+      - date
+      - time
+      - party_size
+    - id: cancellation
+      required_slots:
+      - booking_id
+      note: No phone — it comes from the stored booking.
+    validation: >-
+      Slots are validated deterministically BEFORE anything is dialed. An
+      incomplete submission returns 422 listing each missing slot with a
+      `suggested_question` to relay to the end user. Validation never dials and
+      never charges — but the credit-hold check runs FIRST, so an underfunded
+      key gets 402 even for an incomplete submission.
+    discovery: GET /skills and GET /skills/{skill_id}/manifest publish the slot schemas.
+field_expansion:
+  supported: false
+sparse_fieldsets:
+  supported: false
+metadata_field:
+  supported: false
+request_tracing:
+  style: server-assigned
+  field: request_id
+  location: error response body (ErrorResponse.request_id)
+  header: none observed
+  detail: >-
+    A request_id appears in error bodies and in Business Validation API success
+    bodies, but NO correlation header (X-Request-Id, Traceparent) was observed
+    on live responses. Successful Calls API responses expose call_id as the
+    durable handle.
+versioning:
+  scheme: none-for-the-main-surface
+  spec_version: 1.0.0 (info.version)
+  detail: >-
+    The Calls API is unversioned — paths are /calls, /users/me, /skills with no
+    version segment. Only two operations carry a /v1 prefix (/v1/usage, and
+    /v1/business-status on the Business Validation host), so the API is
+    inconsistently versioned rather than deliberately unversioned. There is no
+    published versioning policy, no version header, and no deprecation policy.
+  see: lifecycle/voygr-lifecycle.yml
+error_envelope:
+  format: vendor-json
+  rfc9457: false
+  primary_schema: components.schemas.ErrorResponse
+  see: errors/voygr-problem-types.yml
+  warning: >-
+    Three different error shapes are live (ErrorResponse, FastAPI `detail`,
+    HTTPValidationError). Only the first is documented.
+rate_limit_signaling:
+  headers: none
+  status: 429
+  detail: >-
+    Limits are documented in prose only; no RateLimit-*/Retry-After headers are
+    returned. Budget must be read from GET /v1/usage or GET /users/me.
+  see: rate-limits/voygr-rate-limits.yml
+content_negotiation:
+  request: application/json
+  response: application/json, except text/event-stream on GET /calls/{call_id}/events
+data_formats:
+  timestamps: ISO 8601 UTC
+  phone_numbers: E.164
+  identifiers: opaque strings (call_id, request_id, customer_id, api_key_id)
+  languages:
+  - en
+  - es
+  - fr
+  - de
+  - hi
+  - ru
+  - pt
+  - ja
+  - it
+  - nl
+  - sr
+  - tr
+  - pl
+  - auto
+  language_default: auto (resolves to en)
+constraints:
+  brief_max_chars: 4000
+  destinations: United States only
+  ai_disclosure: >-
+    Every call announces that it is an AI assistant and that the call is
+    recorded. Not configurable.
+  retention: Recordings and transcripts retained for a maximum of 90 days.
+  acceptable_use: >-
+    Transactional and user-initiated calls only — no telemarketing,
+    solicitation, bulk dialing or harassment.

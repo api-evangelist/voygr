@@ -1,0 +1,148 @@
+generated: '2026-08-14'
+method: derived
+source: >-
+  openapi/_original/voygr-calls-api-openapi.json, live probes 2026-08-14,
+  https://voygr.tech/terms-api, https://voygr.tech/privacy-policy,
+  https://api.voygr.tech/docs
+note: >-
+  No compliance certifications, trust center, or standards-conformance claims of
+  any kind are published by VOYGR. Searched voygr.tech (4-URL sitemap), the API
+  docs, the checkout page, the API terms, the privacy policy and the GitHub org.
+  There is no SOC 2, ISO 27001, HIPAA, PCI or GDPR/DPA statement to record, so
+  NO `type: Compliance` pointer is emitted. This file records what the API does
+  and does not conform to technically.
+conformance:
+- id: openapi-3.1
+  name: OpenAPI Specification 3.1.0
+  conforms: true
+  evidence: >-
+    https://api.voygr.tech/openapi.json declares openapi 3.1.0 and parses; 12
+    paths, 13 operations, 14 component schemas, unique operationIds, summaries
+    and descriptions on every operation, documented 4xx/5xx responses with
+    inline examples on most.
+- id: json-schema-2020-12
+  name: JSON Schema 2020-12
+  conforms: true
+  evidence: Implied by OpenAPI 3.1.0; schemas use anyOf/null unions in 2020-12 style.
+- id: openapi-security-schemes
+  name: OpenAPI securitySchemes declared and applied
+  conforms: false
+  evidence: >-
+    components.securitySchemes is absent and no `security` block exists at
+    document or operation level. Authentication is modelled as an OPTIONAL
+    header parameter (X-API-Key, required: false) plus prose. A mechanical
+    reader cannot tell the API is authenticated.
+- id: openapi-servers
+  name: OpenAPI servers[] declared
+  conforms: false
+  evidence: >-
+    The published document has no `servers` block at all. The base URL
+    (https://api.voygr.tech) is only recoverable from the curl examples inside
+    info.description and from the provider's SKILL.md.
+- id: openapi-tags
+  name: Operations tagged
+  conforms: false
+  evidence: No `tags` at document level and no `tags` on any operation.
+- id: rfc9457
+  name: RFC 9457 Problem Details for HTTP APIs
+  conforms: false
+  evidence: >-
+    Errors are a vendor JSON envelope (success/error/error_code/request_id)
+    served as application/json. No application/problem+json, no type/title/
+    status/detail/instance members.
+- id: rfc9116
+  name: RFC 9116 security.txt
+  conforms: false
+  evidence: >-
+    /.well-known/security.txt returns 404 on voygr.tech, api.voygr.tech and
+    dev.voygr.tech (probed 2026-08-14).
+- id: rfc8594
+  name: RFC 8594 Sunset header
+  conforms: false
+  evidence: No Sunset or Deprecation headers; no deprecation policy published.
+- id: rfc6749-oauth2
+  name: OAuth 2.0
+  conforms: false
+  evidence: >-
+    API-key-in-header only. /.well-known/oauth-authorization-server and
+    /.well-known/oauth-protected-resource both 404.
+- id: oidc
+  name: OpenID Connect
+  conforms: false
+  evidence: /.well-known/openid-configuration returns 404 on every host.
+- id: rfc8615-well-known
+  name: RFC 8615 well-known URIs
+  conforms: false
+  evidence: Every /.well-known/ path probed returns 404. See well-known/voygr-well-known.yml.
+- id: a2a
+  name: A2A Agent Card
+  conforms: false
+  evidence: /.well-known/agent-card.json and /.well-known/agent.json 404 on every host.
+- id: mcp
+  name: Model Context Protocol
+  conforms: false
+  evidence: >-
+    No MCP server. /mcp 404s on both API hosts and MCP appears nowhere in the
+    docs or repos. VOYGR's agent surface is an Agent Skill over REST instead.
+- id: agent-skills
+  name: Agent Skills (SKILL.md packaging)
+  conforms: true
+  evidence: >-
+    https://github.com/voygr-tech/callwright-skill ships skills/callwright/SKILL.md
+    with valid frontmatter (name, description, version 5.2.1, author, license,
+    platforms) plus an AGENTS.md variant for Codex. Provider-published and MIT
+    licensed. Saved verbatim in skills/.
+- id: sse
+  name: Server-Sent Events framing
+  conforms: partial
+  evidence: >-
+    GET /calls/{call_id}/events returns text/event-stream, but the provider
+    explicitly instructs clients NOT to hold a stream open and states that the
+    gateway strips the Last-Event-ID header — so it is SSE-formatted polling
+    with a query cursor, not conformant SSE.
+- id: idempotency
+  name: Idempotent unsafe requests (Idempotency-Key)
+  conforms: false
+  evidence: >-
+    No idempotency key on POST /calls. Only cancel_call, rebuild_transcript_merged
+    and (absorbed) answer_call are documented as replay-safe.
+- id: rate-limit-headers
+  name: RateLimit header fields (draft) / Retry-After
+  conforms: false
+  evidence: >-
+    No RateLimit-*, X-RateLimit-* or Retry-After headers observed on live 200 or
+    401 responses (probed 2026-08-14). Limits are prose-only.
+- id: e164
+  name: E.164 phone number formatting
+  conforms: true
+  evidence: CallCreateRequest.target_phone description — "E.164 format."
+- id: iso8601
+  name: ISO 8601 / RFC 3339 timestamps
+  conforms: true
+  evidence: validation_timestamp and created_at/started_at/ended_at documented as ISO 8601 UTC.
+- id: iso639-1
+  name: ISO 639-1 language codes
+  conforms: partial
+  evidence: >-
+    `language` is documented as "ISO 639-1 code or auto", but only 13 codes are
+    accepted (en, es, fr, de, hi, ru, pt, ja, it, nl, sr, tr, pl); any other
+    valid ISO 639-1 code is refused with 422 unsupported_language.
+- id: tls
+  name: TLS
+  conforms: true
+  evidence: >-
+    HTTPS enforced. api.voygr.tech negotiates TLSv1.2 (no HSTS header);
+    voygr.tech negotiates TLSv1.3 with HSTS max-age 31536000. See
+    security/voygr-domain-security.yml.
+regulatory_context:
+  note: >-
+    VOYGR places automated outbound voice calls to US numbers. The API's own
+    acceptable-use section states that calls are transactional and
+    user-initiated only, that no telemarketing/solicitation/bulk dialing is
+    permitted, and that every call discloses it is an AI assistant and is
+    recorded (non-configurable) — controls consistent with US telephony consent
+    law and two-party recording consent. VOYGR makes NO explicit TCPA, CTIA or
+    state-law compliance claim, so none is recorded here as a conformance
+    assertion.
+  published_terms: https://voygr.tech/terms-api
+certifications: []

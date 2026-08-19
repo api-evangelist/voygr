@@ -1,0 +1,103 @@
+generated: '2026-08-14'
+method: probed
+source: https://api.voygr.tech/checkout/packs
+docs: https://api.voygr.tech/checkout
+note: >-
+  VOYGR publishes a MACHINE-READABLE price list. The checkout page fetches
+  GET /checkout/packs, which returns the credit packs as JSON with no
+  authentication. Probed 2026-08-14, HTTP 200, application/json:
+  [{"label":"1K","credits":1000,"price":"$10.00"},{"label":"2.5K","credits":2500,"price":"$24.00"},{"label":"5K","credits":5000,"price":"$45.00"}]
+  There are no monthly subscription tiers — the model is prepaid credits plus a
+  free grant. The company's location-data products (validation, enrichment) are
+  still demo-gated on voygr.tech, but they draw on the SAME credit balance and
+  the same published credit rates.
+model: prepaid-credits
+currency: USD
+billing_period: none (one-off top-ups; credits never expire)
+payment_processor: Stripe (hosted checkout)
+plan_count: 4
+plans:
+- name: Free
+  price: 0
+  currency: USD
+  billing_period: none
+  signup: https://api.voygr.tech/checkout
+  card_required: false
+  included_credits: 2500
+  included_calls: 250 successful calls
+  limits:
+    calls_per_day: 25
+    requests_per_second: 5
+    requests_per_minute: 10
+  note: >-
+    Key is emailed after name+email signup. Free-tier rate limits are the
+    published free-key limits (5 req/s, 10 req/min).
+- name: 1K credit pack
+  label: 1K
+  price: 10.00
+  currency: USD
+  billing_period: one-time
+  included_credits: 1000
+  unit_price_per_credit: 0.01
+  limits:
+    calls_per_day: 5000
+    requests_per_second: 10
+    requests_per_minute: 100
+- name: 2.5K credit pack
+  label: 2.5K
+  price: 24.00
+  currency: USD
+  billing_period: one-time
+  included_credits: 2500
+  unit_price_per_credit: 0.0096
+  limits:
+    calls_per_day: 5000
+    requests_per_second: 10
+    requests_per_minute: 100
+- name: 5K credit pack
+  label: 5K
+  price: 45.00
+  currency: USD
+  billing_period: one-time
+  included_credits: 5000
+  unit_price_per_credit: 0.009
+  limits:
+    calls_per_day: 5000
+    requests_per_second: 10
+    requests_per_minute: 100
+credit_rates:
+  source: https://api.voygr.tech/docs (banner) and https://api.voygr.tech/checkout
+  rates:
+  - operation: validation
+    credits: 1
+    unit: request
+  - operation: enrichment
+    credits: 1
+    unit: request
+  - operation: business status
+    credits: 1
+    unit: request
+  - operation: categorize
+    credits: 1
+    unit: request
+  - operation: AI booking call
+    credits: 10
+    unit: successful call
+  holds:
+    dial_time_hold: 30
+    refundable: true
+    charged_on_success: 10
+    charged_on_failure: 0
+    note: >-
+      The hold is 3x the charge and is released at completion; only the settled
+      amount is charged. Under 30 available credits, POST /calls returns 402
+      even with a non-zero balance.
+  expiry: Credits never expire.
+enterprise:
+  contact_sales: true
+  url: https://voygr.tech/#contacts
+  note: >-
+    The location-data products (Location Freshness Validation, Location Data
+    Enrichment) are marketed on voygr.tech behind "Request a demo" with no
+    published price. A `tier` value of `enterprise` exists in the API's
+    UsageResponse schema, but no enterprise pricing is published.

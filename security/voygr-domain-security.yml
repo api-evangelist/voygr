@@ -1,13 +1,18 @@
-generated: '2026-07-21'
+generated: '2026-08-14'
 method: probed
 source: live DNS/TLS/HTTP probes of apis.yml + OpenAPI hosts
 hosts:
 - host: voygr.tech
   https: true
   tls_version: TLSv1.3
-  cert_expires: Aug 25 08:15:11 2026 GMT
+  cert_expires: Oct 24 07:17:56 2026 GMT
   hsts: true
   hsts_max_age: 31536000
+- host: api.voygr.tech
+  https: true
+  tls_version: TLSv1.2
+  cert_expires: Feb  4 23:59:59 2027 GMT
+  hsts: null
 domains:
 - domain: voygr.tech
   dnssec: false

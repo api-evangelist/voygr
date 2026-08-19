@@ -1,0 +1,285 @@
+generated: '2026-08-14'
+method: derived
+source: openapi/_original/voygr-calls-api-openapi.json (components.schemas + path parameters)
+note: >-
+  Derived from the 14 schemas in the published Calls API contract. The spec uses
+  very little $ref linking — only CallResponse -> CallDTO and
+  MergedTranscript -> MergedTranscriptTurn are true $refs; every other
+  relationship below is an ID-REFERENCE relationship read from field names and
+  their descriptions (customer_id, task_id, call_id, call_sid, skill_run_id,
+  queue_id, api_key_id). Marked as such per relationship so the evidence is
+  visible.
+identifiers:
+- field: call_id
+  entity: Call
+  form: opaque string
+  role: primary handle; path parameter on 7 operations
+- field: customer_id
+  entity: Customer
+  form: opaque string
+- field: task_id
+  entity: Task
+  form: opaque string
+  note: Returned alongside every created call; no operation exposes a Task directly.
+- field: call_sid
+  entity: Call
+  form: opaque string, nullable
+  note: Telephony-carrier side identifier.
+- field: skill_run_id
+  entity: SkillRun
+  form: opaque string
+  note: Returned only on the structured (intent+slots) path.
+- field: queue_id
+  entity: QueueEntry
+  form: opaque string
+  note: Only on 202 queued deployments.
+- field: api_key_id
+  entity: ApiKey
+  form: opaque string
+- field: request_id
+  entity: Request
+  form: UUID in observed examples
+  note: Tracing handle in error bodies; also a client-supplied dedupe token on AnswerRequest.
+- field: owner_pod
+  entity: Pod
+  form: opaque string
+  note: Backend shard the call is pinned to. Leaked infrastructure detail, not a customer concept.
+entities:
+- name: Customer
+  schema: null
+  exposed_by:
+  - GET /users/me
+  fields:
+  - customer_id
+  - quota_limit
+  - current_usage
+  - credits_available
+  - credits_held
+  - max_concurrent_calls
+  note: >-
+    No schema is declared for the GET /users/me 200 body — the field list comes
+    from the example in the provider's own SKILL.md, not from the contract.
+- name: ApiKey
+  schema: UsageResponse
+  exposed_by:
+  - GET /v1/usage
+  fields:
+  - tier
+  - api_key_id
+  - customer_name
+  - quota_limit
+  - current_usage
+  - remaining
+  - available
+  - call_credit_hold
+  - percentage_used
+  - reset_date
+  - period
+  - status
+- name: Call
+  schema: CallDTO
+  exposed_by:
+  - POST /calls
+  - GET /calls
+  - GET /calls/{call_id}
+  fields:
+  - call_id
+  - customer_id
+  - task_id
+  - target_phone
+  - language
+  - status
+  - call_sid
+  - started_at
+  - ended_at
+  - duration_sec
+  - outcome_type
+  - outcome_summary
+  - outcome_charge_cents
+  - created_at
+  - has_recording
+  - recording_url
+  - reservation_signals
+  - transcript_full
+  - supervisor_decisions
+  lifecycle_states:
+  - dialing
+  - queued
+  - completed
+  - failed
+  - cancelled
+  note: >-
+    `status` is typed as a plain string with no enum in the contract; the state
+    names above are taken from the prose in info.description and the SKILL.md.
+- name: CallCreateRequest
+  schema: CallCreateRequest
+  fields:
+  - target_phone
+  - brief
+  - language
+  - intent
+  - slots
+  - kind
+  - ask_user_mode
+  note: Two mutually exclusive shapes in one schema — see conventions/.
+- name: CallResponse
+  schema: CallResponse
+  fields:
+  - call
+  - task_id
+  - credits_reserved
+  - credits_charge_on_success
+  - owner_pod
+  note: Freeform-path envelope. Wraps CallDTO.
+- name: SkillRun
+  schema: SkillRunResponse
+  fields:
+  - skill_run_id
+  - call_id
+  - call_sid
+  - owner_pod
+  - status
+  - credits_reserved
+  - credits_charge_on_success
+  - status_url
+  - answer_url
+  - recording_url
+  - replayed
+  - expected_next_steps
+  note: >-
+    Structured-path envelope. `replayed` is a boolean with NO description
+    anywhere in the contract or the docs — recorded as present and undocumented;
+    no meaning is invented for it.
+- name: QueueEntry
+  schema: QueuedCallResponse
+  fields:
+  - call_id
+  - queue_id
+  - position
+  - status
+  - credits_reserved
+  - credits_charge_on_success
+  note: 202 envelope on deployments that queue before dialing.
+- name: Skill
+  schema: null
+  exposed_by:
+  - GET /skills
+  - GET /skills/{skill_id}/manifest
+  members:
+  - inquiry
+  - info_gathering
+  - issue_resolution
+  - booking
+  - cancellation
+  note: >-
+    VOYGR's intent registry. Neither the list response nor the manifest response
+    has a declared schema — both are untyped 200s.
+- name: TranscriptTurn
+  schema: TranscriptTurn
+  fields:
+  - ts
+  - role
+  - text
+  note: Live transcript turn, embedded in CallDTO.transcript_full.
+- name: MergedTranscript
+  schema: MergedTranscript
+  fields:
+  - version
+  - duration_ms
+  - calibration_delta_ms
+  - turns
+- name: MergedTranscriptTurn
+  schema: MergedTranscriptTurn
+  fields:
+  - speaker
+  - start_ms
+  - end_ms
+  - text
+  - source
+  - words
+  - overlap_with_next
+  - original_end_ms
+  - timing_estimated
+- name: Answer
+  schema: AnswerRequest
+  fields:
+  - answer
+  - outcome
+  - request_id
+  - mode
+  response_schema: AnswerResponse
+  response_fields:
+  - delivered
+  - reason
+  reason_values:
+  - delivered
+  - no_pending_request
+- name: Error
+  schema: ErrorResponse
+  see: errors/voygr-problem-types.yml
+relationships:
+- from: Customer
+  to: ApiKey
+  type: has_many
+  via: api_key_id
+  evidence: id-reference
+- from: Customer
+  to: Call
+  type: has_many
+  via: CallDTO.customer_id
+  evidence: id-reference
+- from: Call
+  to: Task
+  type: belongs_to
+  via: CallDTO.task_id
+  evidence: id-reference
+- from: CallResponse
+  to: Call
+  type: has_one
+  via: $ref CallDTO
+  evidence: $ref
+- from: Call
+  to: TranscriptTurn
+  type: has_many
+  via: CallDTO.transcript_full
+  evidence: inline array
+- from: MergedTranscript
+  to: MergedTranscriptTurn
+  type: has_many
+  via: $ref turns[]
+  evidence: $ref
+- from: Call
+  to: MergedTranscript
+  type: has_one
+  via: GET /calls/{call_id}/transcript-merged
+  evidence: path-parameter
+- from: SkillRun
+  to: Call
+  type: has_one
+  via: SkillRunResponse.call_id
+  evidence: id-reference
+- from: SkillRun
+  to: Skill
+  type: belongs_to
+  via: intent / skill_id
+  evidence: path-parameter on GET /skills/{skill_id}/manifest
+- from: QueueEntry
+  to: Call
+  type: has_one
+  via: QueuedCallResponse.call_id
+  evidence: id-reference
+- from: Call
+  to: Answer
+  type: has_many
+  via: POST /calls/{call_id}/answer
+  evidence: path-parameter
+- from: Call
+  to: Pod
+  type: belongs_to
+  via: owner_pod
+  evidence: id-reference
+gaps:
+- No enum is declared for Call.status, Call.outcome_type, or Skill ids — all are bare strings.
+- 'GET /users/me, GET /skills and GET /skills/{skill_id}/manifest have untyped 200 responses (no schema).'
+- 'SkillRunResponse.replayed has no description.'
+- 'The Business Validation API entities (business-status result: existence_status, open_closed_status, request_id, validation_timestamp) are documented only in the dev-tools README and appear in NO published spec.'

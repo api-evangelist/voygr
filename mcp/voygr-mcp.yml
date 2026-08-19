@@ -1,0 +1,84 @@
+generated: '2026-08-14'
+method: derived
+status: candidate
+source: openapi/voygr-calls-api-openapi.json
+search_note: >-
+  NO MCP server is published by VOYGR. Probed https://api.voygr.tech/mcp (404
+  JSON) and https://dev.voygr.tech/mcp (404 JSON); searched the GitHub org
+  voygr-tech (3 public repos, none an MCP server), the API docs at
+  api.voygr.tech/docs, the checkout page, and the provider-published
+  callwright-skill repo — the string "mcp" appears nowhere in SKILL.md,
+  AGENTS.md or the dev-tools README. VOYGR's chosen agent surface is a packaged
+  Agent Skill over plain REST + curl, explicitly stated in SKILL.md: "you make
+  calls by sending HTTP requests to the callwright API with your shell/terminal
+  tool (curl)". The `GET /skills` and `GET /skills/{skill_id}/manifest`
+  operations in the Calls API are VOYGR's own intent/slot-schema registry, not
+  MCP.
+deployment:
+  mode: none
+  auth: api-key
+  verified: probed
+note: >-
+  The tools below are a DERIVED CANDIDATE mapping of the public Calls API
+  operations. VOYGR ships no server for them. No endpoint is asserted because
+  none exists — do not read this file as an agent surface.
+server:
+  name: voygr-calls
+  transport: n/a
+  auth:
+    type: apiKey
+    in: header
+    name: X-API-Key
+candidate_tools:
+- name: place_call
+  operationId: create_call
+  rest: POST /calls
+  description: >-
+    Place a real outbound phone call. Freeform (target_phone + brief) or
+    structured (intent + slots). Returns 201/202 with a call_id.
+- name: list_calls
+  operationId: list_calls
+  rest: GET /calls
+  description: List recent calls for the key (limit 1..1000).
+- name: get_call
+  operationId: get_call
+  rest: GET /calls/{call_id}
+  description: Poll a call until status reaches completed, failed or cancelled.
+- name: answer_call_question
+  operationId: answer_call
+  rest: POST /calls/{call_id}/answer
+  description: Answer an ask_user question the agent raised mid-call.
+- name: poll_call_events
+  operationId: get_call_events
+  rest: GET /calls/{call_id}/events
+  description: >-
+    Cursor-polled SSE-formatted event stream (after_event_id). Short requests
+    only — the gateway strips Last-Event-ID.
+- name: get_merged_transcript
+  operationId: get_transcript_merged
+  rest: GET /calls/{call_id}/transcript-merged
+  description: Post-call two-sided transcript rebuilt from the dual-channel recording.
+- name: rebuild_merged_transcript
+  operationId: rebuild_transcript_merged
+  rest: POST /calls/{call_id}/transcript-merged/rebuild
+  description: Force the merged-transcript rebuild. Idempotent; costs a transcription pass.
+- name: cancel_call
+  operationId: cancel_call
+  rest: POST /calls/{call_id}/cancel
+  description: Cancel a queued or active call. Safe to call idempotently.
+- name: list_skills
+  operationId: list_skills
+  rest: GET /skills
+  description: List the structured intents the Calls API supports.
+- name: get_skill_manifest
+  operationId: get_skill_manifest
+  rest: GET /skills/{skill_id}/manifest
+  description: Slot schema for one intent — the required fields before a call is dialed.
+- name: get_usage
+  operationId: get_usage_v1_usage_get
+  rest: GET /v1/usage
+  description: Credit quota snapshot (available, call_credit_hold, remaining).
+- name: whoami
+  operationId: get_me
+  rest: GET /users/me
+  description: Customer identity, credit balance, held credits, concurrency cap.

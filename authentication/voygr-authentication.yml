@@ -1,0 +1,89 @@
+generated: '2026-08-14'
+method: searched
+source: >-
+  https://api.voygr.tech/openapi.json (info.description "## Authentication"),
+  https://api.voygr.tech/docs, https://api.voygr.tech/checkout,
+  https://github.com/voygr-tech/callwright-skill (SKILL.md "## Connection"),
+  https://github.com/voygr-tech/dev-tools (README "## Authentication")
+docs: https://api.voygr.tech/docs
+summary: >-
+  Single-factor API key in a custom header. No OAuth, no OIDC, no mTLS, no
+  bearer tokens, no scopes. One key carries the customer's credit quota, rate
+  limits and concurrent-call cap.
+schemes:
+- id: api-key-header
+  type: apiKey
+  in: header
+  name: X-API-Key
+  required: true
+  applies_to: every operation except GET /health
+  description: >-
+    Issued per customer. Sent on every request. The Business Validation API at
+    dev.voygr.tech uses the same header.
+  key_format:
+    prefix: pk_live_
+    source: >-
+      Observed in the dev-tools README examples (`voygr login pk_live_abc123`).
+      The Calls API documentation never prints a key format because keys are
+      emailed, never displayed.
+spec_gap:
+  securitySchemes_declared: false
+  security_applied: false
+  detail: >-
+    The published OpenAPI 3.1.0 declares NO components.securitySchemes and no
+    top-level or per-operation `security` block. Authentication is expressed
+    only as an optional `X-API-Key` header PARAMETER on each operation
+    (required: false in the schema) plus prose in info.description. A generated
+    client or an agent reading the contract mechanically will not learn that the
+    API is authenticated, and will not mark the header required. This is the
+    single highest-value contract fix available to VOYGR — see
+    overlays/voygr-calls-api-overlay.yaml for the corrective overlay.
+issuance:
+  self_serve: true
+  flow:
+  - step: Request a key
+    how: >-
+      https://api.voygr.tech/checkout ("Get free API key", name + email) or
+      POST /signup with {"name": "...", "email": "..."}
+    auth_required: false
+  - step: Receive the key
+    how: >-
+      Emailed. The key is never shown in the browser and never returned in an
+      API response.
+  - step: Verify
+    how: 'curl -s -H "X-API-Key: $KEY" https://api.voygr.tech/users/me'
+  free_tier: 2,500 credits, 25 calls/day cap
+rotation_recovery:
+  endpoint: https://api.voygr.tech/recover
+  cli: voygr recover <email>
+  behavior: >-
+    A recovery link is emailed. Clicking it ROTATES the key — the existing key
+    stops working immediately and a new one is emailed to the same address.
+    Remaining quota and plan tier carry over.
+  enumeration_resistance: >-
+    The response is uniform whether or not the email is registered, and is
+    rate-limited per email and per source IP (dev-tools README).
+  self_service_rotation_from_api: false
+storage_guidance_published_by_provider:
+- Store the key in the CALLWRIGHT_API_KEY environment variable; never echo or print it.
+- 'CLI/library resolution order: --api-key flag, then VOYGR_API_KEY env var, then ~/.config/voygr/config.json.'
+- 'SKILL.md instructs agents: reference the key as $CALLWRIGHT_API_KEY in shell commands, never inline the value.'
+- 'Recommended file mode for the saved env file: 600.'
+failure_modes:
+- status: 401
+  error_code: AUTHENTICATION_ERROR
+  meaning: Missing or invalid X-API-Key header.
+- status: 403
+  error_code: AUTHENTICATION_ERROR
+  meaning: Invalid, revoked, or unauthorized API key; key not permitted for this request.
+scopes:
+  supported: false
+  note: >-
+    No OAuth and no permission scopes exist. Entitlement is expressed as a key
+    TIER (free / paid / enterprise, surfaced on GET /v1/usage as `tier`) plus a
+    credit balance and a concurrency cap, not as scopes. scopes/ is
+    deliberately not emitted.
+transport:
+  https_required: true
+  observed_tls: TLSv1.2 on api.voygr.tech (see security/voygr-domain-security.yml)
+  hsts: not sent by api.voygr.tech

@@ -1,0 +1,89 @@
+generated: '2026-08-14'
+method: searched
+source: >-
+  https://api.voygr.tech/openapi.json, https://api.voygr.tech/docs,
+  https://voygr.tech/terms-api, https://github.com/voygr-tech (3 public repos),
+  plus live probes 2026-08-14
+versioning:
+  scheme: inconsistent
+  spec_version: 1.0.0
+  detail: >-
+    info.version is 1.0.0. Most paths are unversioned (/calls, /users/me,
+    /skills, /health); two carry a /v1 segment (/v1/usage on the Calls host,
+    /v1/business-status on the Business Validation host). No version header, no
+    media-type versioning, no published version policy.
+  policy_published: false
+deprecation:
+  policy_published: false
+  sunset_header: false
+  deprecation_header: false
+  rfc8594: false
+  deprecated_operations: []
+  detail: >-
+    No operation in the published spec carries `deprecated: true`. No Sunset or
+    Deprecation response headers were observed. No deprecation policy is
+    published anywhere on voygr.tech, api.voygr.tech or the GitHub org. NOTE —
+    the callwright-skill README does instruct users to remove a previously
+    installed `ai-call-agent` phone skill, which is the closest thing to a
+    migration note the provider publishes; it is a client-side instruction, not
+    an API deprecation policy.
+  no_deprecation_pointer_emitted: true
+status_page:
+  published: false
+  probed:
+  - url: https://status.voygr.tech/
+    status: 000 (no DNS)
+  - url: https://voygr.tech/status
+    status: 404
+  liveness_endpoint:
+    path: GET /health
+    host: https://api.voygr.tech
+    status: 200
+    body: '{"status":"ok"}'
+    auth_required: false
+    note: >-
+      Unauthenticated liveness check — genuinely useful, but it is a health
+      endpoint, not a status page. NO `type: StatusPage` pointer is emitted;
+      asserting one would credit VOYGR with an incident-communication surface it
+      does not operate.
+  no_statuspage_pointer_emitted: true
+maintenance:
+  signal: HTTP 503 with a `resume_at` timestamp on POST /calls
+  source: openapi info.description "## Limits"
+  note: >-
+    In-band maintenance signalling substitutes for a status page. An integrator
+    learns about a window by being refused, not in advance.
+changelog:
+  published: false
+  probed:
+  - url: https://api.voygr.tech/changelog
+    status: 404
+  - url: https://voygr.tech/blog
+    status: 404
+  detail: >-
+    No dated changelog exists on the site, the API host, or the GitHub org (no
+    CHANGELOG.md in any of the 3 public repos, no GitHub Releases). The only
+    version history available is PyPI release dates for the `voygr` package
+    (0.1.0 2026-04-03, 0.2.0 2026-04-06, 0.2.1 2026-04-06) and the callwright
+    skill's own `version: 5.2.1` frontmatter. changelog/ is not emitted.
+sla:
+  published: false
+  detail: No uptime commitment, credit, or support-response SLA is published.
+support:
+  email: support@voygr.tech
+  founders_email: founders@voygr.tech
+  contact_page: https://voygr.tech/#contacts
+retention:
+  recordings_and_transcripts: maximum 90 days
+  source: openapi info.description "## Acceptable use"
+terms:
+  api_terms: https://voygr.tech/terms-api
+  site_terms: https://voygr.tech/terms
+  privacy: https://voygr.tech/privacy-policy
+company_stage:
+  founded_context: Y Combinator W26, SNR.VC backed, seed-stage, San Francisco
+  api_maturity: >-
+    Early. Two APIs are live and self-serve, but there is no changelog, no
+    status page, no deprecation policy, no SLA, and the published OpenAPI omits
+    securitySchemes. The developer surface is real and reachable — the
+    operational surface around it is not yet built.

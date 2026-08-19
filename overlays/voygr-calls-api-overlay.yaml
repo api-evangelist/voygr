@@ -1,0 +1,156 @@
+overlay: 1.0.0
+info:
+  title: API Evangelist enhancements — Voygr Calls API
+  version: 1.0.0
+extends: ../openapi/_original/voygr-calls-api-openapi.json
+x-generated: '2026-08-14'
+x-method: generated
+x-source: >-
+  Derived from the provider's own published statements. Every value below is
+  quoted from https://api.voygr.tech/openapi.json (info.description),
+  https://api.voygr.tech/docs, or
+  https://github.com/voygr-tech/callwright-skill (SKILL.md / AGENTS.md). Nothing
+  is invented. The original document is never mutated.
+actions:
+- target: $
+  description: >-
+    Add the servers block the published document omits. The host is stated by
+    the provider in its own curl examples inside info.description ("curl -s
+    https://api.voygr.tech/calls"), in SKILL.md ("Base URL:
+    https://api.voygr.tech"), and is the host that serves this very document.
+    dev.voygr.tech serves a byte-identical copy of this spec and additionally
+    hosts the Business Validation API.
+  update:
+    servers:
+    - url: https://api.voygr.tech
+      description: Production
+    - url: https://dev.voygr.tech
+      description: >-
+        Serves an identical copy of this contract; also hosts the Business
+        Validation API (POST /v1/business-status, POST /signup), which is not
+        described in this document.
+- target: $.components
+  description: >-
+    Declare the API-key security scheme. The published document has no
+    components.securitySchemes, so a generated client or an agent reading the
+    contract mechanically cannot learn that the API is authenticated. The scheme
+    is documented in prose in info.description ("Every request needs the
+    X-API-Key header").
+  update:
+    securitySchemes:
+      ApiKeyAuth:
+        type: apiKey
+        in: header
+        name: X-API-Key
+        description: >-
+          Per-customer API key carrying a credit quota, rate limits, and a
+          concurrent-call limit. Self-serve at https://api.voygr.tech/checkout;
+          the key is emailed and never returned in an API response. Rotate at
+          https://api.voygr.tech/recover.
+- target: $
+  description: >-
+    Apply the security scheme document-wide. GET /health is exempted below
+    because it answers 200 unauthenticated (probed 2026-08-14).
+  update:
+    security:
+    - ApiKeyAuth: []
+- target: $.paths['/health'].get
+  description: GET /health is unauthenticated — verified by live probe returning 200 {"status":"ok"} with no key.
+  update:
+    security: []
+- target: $
+  description: >-
+    Add document-level tags grouping the operation set. The published document
+    declares no tags at all, so every renderer flattens all 13 operations into
+    one undifferentiated list.
+  update:
+    tags:
+    - name: calls
+      description: Place, follow, and cancel outbound AI voice calls.
+    - name: transcripts
+      description: Post-call merged transcripts rebuilt from the dual-channel recording.
+    - name: skills
+      description: VOYGR's structured intent registry and slot schemas.
+    - name: account
+      description: Identity, credit balance, and quota.
+    - name: system
+      description: Unauthenticated service liveness.
+- target: $.paths['/calls'].post
+  description: Tag the operation.
+  update:
+    tags:
+    - calls
+- target: $.paths['/calls'].get
+  description: Tag the operation.
+  update:
+    tags:
+    - calls
+- target: $.paths['/calls/{call_id}'].get
+  description: Tag the operation.
+  update:
+    tags:
+    - calls
+- target: $.paths['/calls/{call_id}/answer'].post
+  description: Tag the operation.
+  update:
+    tags:
+    - calls
+- target: $.paths['/calls/{call_id}/events'].get
+  description: Tag the operation.
+  update:
+    tags:
+    - calls
+- target: $.paths['/calls/{call_id}/cancel'].post
+  description: Tag the operation.
+  update:
+    tags:
+    - calls
+- target: $.paths['/calls/{call_id}/transcript-merged'].get
+  description: Tag the operation.
+  update:
+    tags:
+    - transcripts
+- target: $.paths['/calls/{call_id}/transcript-merged/rebuild'].post
+  description: Tag the operation.
+  update:
+    tags:
+    - transcripts
+- target: $.paths['/skills'].get
+  description: Tag the operation.
+  update:
+    tags:
+    - skills
+- target: $.paths['/skills/{skill_id}/manifest'].get
+  description: Tag the operation.
+  update:
+    tags:
+    - skills
+- target: $.paths['/users/me'].get
+  description: Tag the operation.
+  update:
+    tags:
+    - account
+- target: $.paths['/v1/usage'].get
+  description: Tag the operation.
+  update:
+    tags:
+    - account
+- target: $.paths['/health'].get
+  description: Tag the operation.
+  update:
+    tags:
+    - system
+- target: $.paths['/calls'].post
+  description: >-
+    Record that this operation has an IRREVERSIBLE real-world side effect and no
+    replay protection. Quoted from the provider's own acceptable-use section and
+    billing table; the absence of an idempotency key is a verified property of
+    the contract, not an opinion.
+  update:
+    x-side-effect: irreversible
+    x-idempotent: false
+    x-agent-warning: >-
+      A retry places a SECOND REAL PHONE CALL to a real person and takes a
+      second 30-credit hold. There is no Idempotency-Key header and no
+      client-supplied request id on this operation. Never blind-retry a 5xx or a
+      timeout — poll GET /calls first to see whether the original call exists.
