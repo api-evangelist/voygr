@@ -72,16 +72,14 @@ tags:
 apis:
 - name: Voygr Calls API
   description: >-
-    Programmatic outbound phone calls executed by an AI voice agent. Submit a
-    task either as a plain-language brief or as a structured intent plus slots
-    (inquiry, info_gathering, issue_resolution, booking, cancellation); the agent
-    places the call, works through phone trees and hold, conducts the
-    conversation in one of 13 languages, and returns a structured outcome with a
-    full transcript. Calls are asynchronous — poll the call until it reaches a
-    terminal state, or cursor-poll an SSE-formatted event feed for live progress
-    and mid-call questions. A post-call merged transcript is rebuilt from the
-    dual-channel recording. OpenAPI 3.1.0, 13 operations, X-API-Key auth, US
-    destinations only, AI disclosure and recording notice on every call.
+    Programmatic outbound phone calls executed by an AI voice agent. Submit a task either as a plain-language
+    brief or as a structured intent plus slots (inquiry, info_gathering, issue_resolution, booking, cancellation);
+    the agent places the call, works through phone trees and hold, conducts the conversation in one of
+    13 languages, and returns a structured outcome with a full transcript. Calls are asynchronous — poll
+    the call until it reaches a terminal state, or cursor-poll an SSE-formatted event feed for live progress
+    and mid-call questions. A post-call merged transcript is rebuilt from the dual-channel recording.
+    OpenAPI 3.1.0, 13 operations, X-API-Key auth, US destinations only, AI disclosure and recording notice
+    on every call.
   humanURL: https://api.voygr.tech/docs
   baseURL: https://api.voygr.tech
   tags:
@@ -123,25 +121,21 @@ apis:
     url: skills/_index.yml
 - name: Voygr Business Validation API
   description: >-
-    Business existence and operating-status validation. POST /v1/business-status
-    takes a business name and a full street address and returns existence_status
-    (exists, not_exists, uncertain) and open_closed_status (open, closed,
-    uncertain) with a request_id and an ISO 8601 validation timestamp; GET
-    /v1/usage returns the remaining quota. POST /signup issues an API key by
-    email with no authentication required. Authenticated with the same X-API-Key
-    header and drawn from the same credit balance as the Calls API, at 1 credit
-    per request. Documented in the first-party dev-tools README and wrapped by
-    the official voygr CLI and Python client; no OpenAPI is published for this
-    surface.
+    Business existence and operating-status validation. POST /v1/business-status takes a business name
+    and a full street address and returns existence_status (exists, not_exists, uncertain) and open_closed_status
+    (open, closed, uncertain) with a request_id and an ISO 8601 validation timestamp; GET /v1/usage returns
+    the remaining quota. POST /signup issues an API key by email with no authentication required. Authenticated
+    with the same X-API-Key header and drawn from the same credit balance as the Calls API, at 1 credit
+    per request. Documented in the first-party dev-tools README and wrapped by the official voygr CLI
+    and Python client; no OpenAPI is published for this surface.
   humanURL: https://github.com/voygr-tech/dev-tools#api-reference
   baseURL: https://dev.voygr.tech
   x-base-url-note: >-
-    `dev.voygr.tech` reads like a non-production host but it IS the production
-    base URL VOYGR publishes for this API: it is the hardcoded CLI/library
-    default in voygr-tech/dev-tools (src/voygr/cli.py), the "Base URL" in that
-    repo's API reference, and the Homepage on the PyPI package. It also serves a
-    byte-identical copy of the Calls API OpenAPI. Do not "repair" it to
-    api.voygr.tech — that would point this entry at a different contract.
+    `dev.voygr.tech` reads like a non-production host but it IS the production base URL VOYGR publishes
+    for this API: it is the hardcoded CLI/library default in voygr-tech/dev-tools (src/voygr/cli.py),
+    the "Base URL" in that repo's API reference, and the Homepage on the PyPI package. It also serves
+    a byte-identical copy of the Calls API OpenAPI. Do not "repair" it to api.voygr.tech — that would
+    point this entry at a different contract.
   tags:
   - Data Validation
   - POI Data
@@ -165,6 +159,16 @@ apis:
     url: cli/voygr-cli.yml
   - type: Authentication
     url: authentication/voygr-authentication.yml
+- aid: voygr:voygr-core-api
+  name: VOYGR Core API
+  description: The core API from VOYGR — 2 operation(s) for core.
+  humanURL: https://api.voygr.tech/docs
+  baseURL: https://api.voygr.tech
+  tags:
+  - core
+  properties:
+  - type: OpenAPI
+    url: openapi/voygr-core-api-openapi.yml
 common:
 - type: Website
   url: https://voygr.tech/
