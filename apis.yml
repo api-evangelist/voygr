@@ -96,11 +96,11 @@ apis:
   humanURL: https://api.voygr.tech/docs
   baseURL: https://api.voygr.tech
   tags:
-  - Voice AI
-  - Telephony
-  - Outbound Calls
+  - voice-ai
+  - telephony
+  - outbound-calls
   - AI Agents
-  - Agent Skills
+  - agent-skills
   - Transcription
   - Booking
   tags_raw:
@@ -150,10 +150,10 @@ apis:
     a byte-identical copy of the Calls API OpenAPI. Do not "repair" it to api.voygr.tech — that would
     point this entry at a different contract.
   tags:
-  - Data Validation
-  - POI Data
+  - data-validation
+  - poi-data
   - Places
-  - Location Intelligence
+  - location-intelligence
   - business-status
   tags_raw:
   - data-validation
@@ -178,6 +178,8 @@ apis:
   humanURL: https://api.voygr.tech/docs
   baseURL: https://api.voygr.tech
   tags:
+  - Core
+  tags_raw:
   - core
   properties:
   - type: OpenAPI
