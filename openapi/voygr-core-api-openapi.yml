@@ -1,18 +1,15 @@
 openapi: 3.2.0
 info:
   title: Voygr Calls Core API
-  description: "\nProgrammatic outbound phone calls executed by an AI voice agent. Submit a task,\nthe agent places the call, conducts the conversation, and returns a structured\noutcome with a full transcript.\n\n## Authentication\n\nEvery request needs the `X-API-Key` header. Keys are issued per customer and\ncarry a credit quota, rate limits, and a concurrent-call limit.\n\n## Placing a call\n\n`POST /calls` accepts two request shapes — pick one per call.\n\n**Freeform** — describe the task in plain language:\n\n```bash\ncurl -s https://api.voygr.tech/calls   -H \"X-API-Key: $API_KEY\" -H \"Content-Type: application/json\"   -d '{\"target_phone\": \"+15551234567\",\n       \"brief\": \"Ask what time the kitchen closes tonight.\",\n       \"language\": \"en\"}'\n```\n\n**Structured** — a machine-readable `intent` plus `slots`, validated\ndeterministically before anything is dialed. Five intents are supported:\n\n| Intent | Required slots |\n|---|---|\n| `inquiry` | `target_phone`, `question` |\n| `info_gathering` | `target_phone`, `questions` |\n| `issue_resolution` | `target_phone`, `issue_description` |\n| `booking` | `target_phone`, `name`, `date`, `time`, `party_size` |\n| `cancellation` | `booking_id` — no phone; it comes from the stored booking |\n\nAn incomplete submission returns `422` listing exactly what is missing, each\nslot with a `suggested_question` to relay to your user — submit, collect,\nresubmit. Validation never dials and never charges. (The credit-hold check\nruns first, so a key that cannot cover the hold gets `402` even for an\nincomplete submission.)\n\n`language` accepts `en`, `es`, `fr`, `de`, `hi`, `ru`, `pt`, `ja`, `it`,\n`nl`, `sr`, `tr`, `pl`, or `auto` (the default); any other code is refused\nwith `422 unsupported_language`.\n\nThe success envelope differs by shape: freeform wraps the call object in\n`{\"call\": {...}}`; structured returns a flat envelope with top-level\n`call_id`, `status_url`, and `answer_url`. Both are documented with examples\non the operation below.\n\n## Call lifecycle\n\nCalls are asynchronous. Poll `GET /calls/{call_id}` until `status` reaches\n`completed`, `failed`, or `cancelled` — typically 30-90 seconds. The terminal\nresponse carries `outcome_type`, `outcome_summary`, and `transcript_full`.\nThere is no completion webhook.\n\nFor live progress, poll `GET /calls/{call_id}/events?after_event_id=N` with\nshort requests, advancing the cursor to the last `id:` you received — the\nbody is SSE-formatted text, but do NOT hold a long-lived stream open, and use\nthe query cursor (the gateway strips the `Last-Event-ID` header). If the\nagent needs input mid-call it emits an `ask_user` event — create the call\nwith `ask_user_mode: \"stream\"` to receive these, and respond via\n`POST /calls/{call_id}/answer`. A queued or ringing call can be aborted with\n`POST /calls/{call_id}/cancel`.\n\nOnce the call ends, `GET /calls/{call_id}/transcript-merged` returns the\ncomplete two-sided transcript rebuilt from the dual-channel recording —\nincluding speech the live pipeline never transcribed (IVR phone trees, hold\nannouncements). The live `transcript_full` stays real-time-only; the merged\none is the complete record. A `202 {\"status\": \"merger_pending\"}` means the\nmerge (which fires seconds after the call ends) hasn't finished — retry\nafter the `transcript_ready` SSE event, or force it with\n`POST /calls/{call_id}/transcript-merged/rebuild`.\n\n## Billing\n\nThe hold and the charge are different numbers:\n\n| Event | Credits |\n|---|---|\n| Hold at dial time (`credits_reserved`) | 30 — frozen, refundable, NOT a charge |\n| Successful outcome (`success_*`) — `credits_charge_on_success` | 10 |\n| Unsuccessful outcome (`failed_*` — no answer, voicemail, technical) | 0 |\n\nThe hold is released at completion and you are only ever charged the settled\namount. Requests are rejected with `402` when the available balance cannot\ncover the hold.\n\n`GET /v1/usage` reports `available` (spendable right now) and\n`call_credit_hold` (what one call freezes), so `available // call_credit_hold`\nis how many calls you can start.\n\n## Limits\n\n- Free keys: 5 requests/second, 10 requests/minute. Paid keys: 10\n  requests/second, 100 requests/minute (`429` beyond).\n- Concurrent calls per key are limited (`409` with `active_call_ids` at the\n  cap; typically 2).\n- Service maintenance windows return `503` with a `resume_at` timestamp.\n\n## Acceptable use\n\nCalls are transactional and user-initiated only: no telemarketing,\nsolicitation, bulk dialing, or harassment. The agent discloses that it is an\nAI assistant and that the call is recorded; disclosure is not configurable.\nUnited States destinations only. Recordings and transcripts are retained for\na maximum of 90 days.\n\n\nCredit rates: validation, enrichment, business status and categorize are 1 credit per request. An AI booking call is 10 credits. Credits never expire."
+  description: Programmatic outbound phone calls executed by an AI voice agent.
   version: 1.0.0
-servers:
-- url: https://api.voygr.tech
-  description: Production (stated by the provider in the spec description curl examples, api.voygr.tech/docs, and callwright-skill SKILL.md)
 tags:
-- name: core
+- name: Core
 paths:
   /health:
     get:
       tags:
-      - core
+      - Core
       summary: Health check
       description: Check if the API server is running
       operationId: health_check_health_get
@@ -25,7 +22,7 @@ paths:
   /v1/usage:
     get:
       tags:
-      - core
+      - Core
       summary: Get API usage statistics
       description: Get current usage, quota, and reset date for the API key.
       operationId: get_usage_v1_usage_get
@@ -134,32 +131,6 @@ components:
         error: Invalid or revoked API key
         error_code: AUTHENTICATION_ERROR
         request_id: 25b104f0-9ad0-4fc7-8530-c5d5ff8d9698
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
     UsageResponse:
       properties:
         tier:
@@ -253,3 +224,29 @@ components:
         reset_date: '2026-03-01'
         period: monthly
         status: active
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError

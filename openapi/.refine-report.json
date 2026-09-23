@@ -1,0 +1,24 @@
+{
+  "provider": "voygr",
+  "sources": [
+    "_original/voygr-calls-api-openapi.json"
+  ],
+  "outputs": [
+    "voygr-calls-api-openapi.yml",
+    "voygr-core-api-openapi.yml"
+  ],
+  "archived": [],
+  "errors": [],
+  "warnings": [],
+  "notes": [
+    "sourced from openapi/_original/ (1 archived document(s)); previously refined output at the top level was skipped rather than re-split",
+    "voygr-calls-api-openapi.json: upgraded openapi 3.1.0 -> OpenAPI 3.2.0",
+    "voygr-calls-api-openapi.json: declared missing tag: calls",
+    "voygr-calls-api-openapi.json: declared missing tag: core",
+    "apis.yml register: already-registered"
+  ],
+  "skipped": [
+    "voygr-calls-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "voygr-core-api-openapi.yml: previously refined output, superseded by openapi/_original/"
+  ]
+}
