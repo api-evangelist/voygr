@@ -903,6 +903,302 @@ paths:
                       error: invalid API key
 components:
   schemas:
+    AnswerResponse:
+      type: object
+      title: AnswerResponse
+      properties:
+        delivered:
+          type: boolean
+          title: Delivered
+        reason:
+          type: string
+          title: Reason
+          enum:
+          - delivered
+          - no_pending_request
+          description: '''delivered'' — a transport took the answer. ''no_pending_request'' — nothing was pending under this request_id (already answered, expired (~60s), or unknown) — the answer was silently dropped (not an error; a stale retry lands here safely).'
+      required:
+      - delivered
+      - reason
+    TranscriptTurn:
+      type: object
+      title: TranscriptTurn
+      description: One line of a call transcript.
+      properties:
+        ts:
+          type: string
+          format: date-time
+          title: Ts
+        role:
+          type: string
+          title: Role
+          enum:
+          - operator
+          - bot
+          - supervisor_stt
+          - system
+          description: operator = the callee, bot = the agent, supervisor_stt = a parallel transcription of the operator's side, system = lifecycle markers.
+        text:
+          type: string
+          title: Text
+      required:
+      - ts
+      - role
+      - text
+    MergedTranscriptTurn:
+      type: object
+      title: MergedTranscriptTurn
+      description: One turn of the post-call merged transcript.
+      properties:
+        speaker:
+          type: string
+          title: Speaker
+          enum:
+          - bot
+          - hostess
+          description: bot = the agent; hostess = the other party — staff, receptionist or IVR (the name is historical and covers every callee-side voice).
+        start_ms:
+          type: integer
+          title: Start Ms
+        end_ms:
+          type: integer
+          title: End Ms
+        text:
+          type: string
+          title: Text
+        source:
+          type: string
+          title: Source
+          enum:
+          - deepgram_batch_multichannel
+          - deepgram_live_multichannel
+          - deepgram_batch
+          - deepgram_live
+          description: 'Where the turn came from: deepgram_batch_multichannel = the dual-channel recording transcribed per channel (the normal case — exact timing on one clock); deepgram_live_multichannel = per-channel live STT; deepgram_batch = a single-channel recording (bot side only); deepgram_live = live STT (callee side).'
+        words:
+          type: array
+          title: Words
+          items:
+            type: object
+            properties:
+              start_ms:
+                type: integer
+              end_ms:
+                type: integer
+              text:
+                type: string
+          description: Per-word timings, when the source provides them.
+        overlap_with_next:
+          type: boolean
+          title: Overlap With Next
+          description: This turn overlapped the next one in time (cross-talk). When true, end_ms has been trimmed to the next turn's start_ms; the untrimmed value is in original_end_ms.
+        original_end_ms:
+          type: integer
+          title: Original End Ms
+          description: The pre-trim end_ms, present only when overlap_with_next is true.
+        timing_estimated:
+          type: boolean
+          title: Timing Estimated
+          description: The text is real but the milliseconds are a reading order, not a measurement — don't plot such turns on a timeline.
+      required:
+      - speaker
+      - start_ms
+      - end_ms
+      - text
+      - source
+    CallResponse:
+      type: object
+      title: CallResponse
+      description: POST /calls success response (201, or 202 on deployments that queue before dialing).
+      properties:
+        call:
+          $ref: '#/components/schemas/CallDTO'
+        task_id:
+          type: string
+          title: Task Id
+        credits_reserved:
+          type: integer
+          title: Credits Reserved
+          description: The refundable HOLD placed at dial time (10). Not a charge — released at completion, minus credits_charge_on_success if the outcome is billable.
+          examples:
+          - 10
+        credits_charge_on_success:
+          type: integer
+          title: Credits Charge On Success
+          description: What the call actually costs if it reaches a billable outcome (10). Unsuccessful outcomes cost 0 and the whole hold comes back.
+          examples:
+          - 10
+        owner_pod:
+          type: string
+          title: Owner Pod
+      required:
+      - call
+      - task_id
+      - credits_reserved
+      - owner_pod
+    SkillRunResponse:
+      type: object
+      title: SkillRunResponse
+      description: POST /calls success response for the STRUCTURED (slots) path ONLY. The structured branch runs through the same pipeline as the skills engine and returns this flat envelope instead of CallResponse — no `call` wrapper, top-level call_id. 201 Created (dial started immediately), or 202 Accepted with status='queued', owner_pod=null and call_sid=null (drainer hasn't dialed yet) on deployments that queue before dialing. Whichever path created the call, poll GET /calls/{call_id} (the status_url) the same way afterward — the call object itself is identical from there on.
+      properties:
+        skill_run_id:
+          type: string
+          title: Skill Run Id
+          examples:
+          - srun_c_abc123
+        call_id:
+          type: string
+          title: Call Id
+          examples:
+          - c_abc123
+        call_sid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Call Sid
+          description: null until the drainer dials (e.g. status='queued').
+        owner_pod:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Owner Pod
+          description: null until the drainer dials (e.g. status='queued').
+        status:
+          type: string
+          title: Status
+          enum:
+          - queued
+          - dialing
+          - in_progress
+          - completed
+          - failed
+          - cancelled
+        credits_reserved:
+          type: integer
+          title: Credits Reserved
+          description: 'The refundable HOLD, not a charge: 10 on the synchronous (immediate-dial) path. On the queued (202) path this is 0 for a GATEWAY-MEDIATED request — the NORMAL case for public-API callers — because the gateway already holds the reservation; callwright reports what it itself holds locally (0) so a reconciler never over-refunds. See credits_charge_on_success for what the run actually costs.'
+          examples:
+          - 10
+          - 0
+        credits_charge_on_success:
+          type: integer
+          title: Credits Charge On Success
+          description: What the run costs if the call reaches a billable outcome (10). Unsuccessful outcomes cost 0.
+          examples:
+          - 10
+        status_url:
+          type: string
+          title: Status Url
+          description: Same as GET /calls/{call_id}.
+          examples:
+          - /calls/c_abc123
+        answer_url:
+          type: string
+          title: Answer Url
+          examples:
+          - /calls/c_abc123/answer
+        recording_url:
+          type: string
+          title: Recording Url
+          description: Always a relative path to this service's recording proxy (/calls/{call_id}/recording) — never null, even before a recording exists (unlike CallDTO.recording_url).
+          examples:
+          - /calls/c_abc123/recording
+        replayed:
+          type: boolean
+          title: Replayed
+          default: false
+        expected_next_steps:
+          type: array
+          items:
+            type: string
+          title: Expected Next Steps
+      required:
+      - skill_run_id
+      - call_id
+      - call_sid
+      - owner_pod
+      - status
+      - credits_reserved
+      - status_url
+      - answer_url
+      - recording_url
+      - expected_next_steps
+    AnswerRequest:
+      type: object
+      title: AnswerRequest
+      description: Answer a pending mid-call question. Exactly one of `answer` or `outcome` must be given — never both, never neither (server-side model_validator rejects both cases with 'provide exactly one of answer or outcome'). When `outcome` is given, `request_id` is also required (server rejects with 'outcome requires request_id' otherwise) — it disambiguates which pending ask_user is being closed out when several are in flight on the same call.
+      properties:
+        answer:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 4000
+          - type: 'null'
+          title: Answer
+          description: Free text the bot will dictate to the operator (mode=voice, the default) or act on silently (mode=context). Mutually exclusive with `outcome`.
+        outcome:
+          anyOf:
+          - type: string
+            enum:
+            - timeout
+            - transport_failure
+          - type: 'null'
+          title: Outcome
+          description: Closed client-side outcome when the observed ask_user request cannot receive an answer. Requires `request_id`. Mutually exclusive with `answer`.
+        request_id:
+          anyOf:
+          - type: string
+            maxLength: 64
+          - type: 'null'
+          title: Request Id
+          description: Disambiguates which pending ask_user this answers, when several are in flight on the same call. Required when `outcome` is set; optional with `answer` (falls back to FIFO — oldest pending — when omitted).
+        mode:
+          type: string
+          enum:
+          - voice
+          - context
+          default: voice
+          title: Mode
+          description: '''voice'' (default): the bot speaks `answer` aloud to the operator. ''context'': silent guidance — the bot acts on `answer` without voicing it (e.g. concierge IVR navigation hints). Only meaningful with `answer`, not `outcome`.'
+      oneOf:
+      - required:
+        - answer
+        not:
+          required:
+          - outcome
+      - required:
+        - outcome
+        - request_id
+        not:
+          required:
+          - answer
+    MergedTranscript:
+      type: object
+      title: MergedTranscript
+      description: 'The post-call merged transcript: both sides of the call on one timeline, built from the dual-channel call recording after the call ends. A fuller record than the live transcript_full — see GET /calls/{call_id}/transcript-merged.'
+      properties:
+        version:
+          type: integer
+          title: Version
+          examples:
+          - 1
+        duration_ms:
+          type: integer
+          title: Duration Ms
+        calibration_delta_ms:
+          type: number
+          title: Calibration Delta Ms
+          description: 0 whenever both sides came off one recording; non-zero only on the single-channel fallback, where the two sources have to be aligned.
+        turns:
+          type: array
+          title: Turns
+          items:
+            $ref: '#/components/schemas/MergedTranscriptTurn'
+      required:
+      - version
+      - duration_ms
+      - calibration_delta_ms
+      - turns
     CallDTO:
       type: object
       title: CallDTO
@@ -1054,302 +1350,49 @@ components:
       - language
       - status
       - created_at
-    SkillRunResponse:
+    QueuedCallResponse:
       type: object
-      title: SkillRunResponse
-      description: POST /calls success response for the STRUCTURED (slots) path ONLY. The structured branch runs through the same pipeline as the skills engine and returns this flat envelope instead of CallResponse — no `call` wrapper, top-level call_id. 201 Created (dial started immediately), or 202 Accepted with status='queued', owner_pod=null and call_sid=null (drainer hasn't dialed yet) on deployments that queue before dialing. Whichever path created the call, poll GET /calls/{call_id} (the status_url) the same way afterward — the call object itself is identical from there on.
+      title: QueuedCallResponse
+      description: POST /calls 202 Accepted body for the FREEFORM path ONLY, on deployments that queue before dialing. The call was persisted and credits reserved but NOT dialed yet — the drainer dials it later at the global rate limit. Poll GET /calls/{call_id} until status leaves 'queued'. Distinct from SkillRunResponse (the structured path's own 202 shape) — this is a separate, much smaller envelope with no owner_pod/call_sid fields.
       properties:
-        skill_run_id:
-          type: string
-          title: Skill Run Id
-          examples:
-          - srun_c_abc123
         call_id:
           type: string
           title: Call Id
           examples:
           - c_abc123
-        call_sid:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Call Sid
-          description: null until the drainer dials (e.g. status='queued').
-        owner_pod:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Owner Pod
-          description: null until the drainer dials (e.g. status='queued').
+        queue_id:
+          type: string
+          title: Queue Id
+        position:
+          type: integer
+          title: Position
+          description: FIFO place in the queue (0 == front). Counts entries still pending or currently being dialed (warming), so this can read 0 while the entry just ahead is mid-dial.
+          examples:
+          - 0
         status:
           type: string
           title: Status
           enum:
           - queued
-          - dialing
-          - in_progress
-          - completed
-          - failed
-          - cancelled
+          default: queued
         credits_reserved:
           type: integer
           title: Credits Reserved
-          description: 'The refundable HOLD, not a charge: 10 on the synchronous (immediate-dial) path. On the queued (202) path this is 0 for a GATEWAY-MEDIATED request — the NORMAL case for public-API callers — because the gateway already holds the reservation; callwright reports what it itself holds locally (0) so a reconciler never over-refunds. See credits_charge_on_success for what the run actually costs.'
+          description: The refundable HOLD already placed for this queued call. 0 for a GATEWAY-MEDIATED request (the normal public-API case) — the gateway holds it instead.
           examples:
           - 10
           - 0
         credits_charge_on_success:
           type: integer
           title: Credits Charge On Success
-          description: What the run costs if the call reaches a billable outcome (10). Unsuccessful outcomes cost 0.
+          description: What the call costs if it reaches a billable outcome (10).
           examples:
           - 10
-        status_url:
-          type: string
-          title: Status Url
-          description: Same as GET /calls/{call_id}.
-          examples:
-          - /calls/c_abc123
-        answer_url:
-          type: string
-          title: Answer Url
-          examples:
-          - /calls/c_abc123/answer
-        recording_url:
-          type: string
-          title: Recording Url
-          description: Always a relative path to this service's recording proxy (/calls/{call_id}/recording) — never null, even before a recording exists (unlike CallDTO.recording_url).
-          examples:
-          - /calls/c_abc123/recording
-        replayed:
-          type: boolean
-          title: Replayed
-          default: false
-        expected_next_steps:
-          type: array
-          items:
-            type: string
-          title: Expected Next Steps
       required:
-      - skill_run_id
       - call_id
-      - call_sid
-      - owner_pod
+      - queue_id
+      - position
       - status
-      - credits_reserved
-      - status_url
-      - answer_url
-      - recording_url
-      - expected_next_steps
-    TranscriptTurn:
-      type: object
-      title: TranscriptTurn
-      description: One line of a call transcript.
-      properties:
-        ts:
-          type: string
-          format: date-time
-          title: Ts
-        role:
-          type: string
-          title: Role
-          enum:
-          - operator
-          - bot
-          - supervisor_stt
-          - system
-          description: operator = the callee, bot = the agent, supervisor_stt = a parallel transcription of the operator's side, system = lifecycle markers.
-        text:
-          type: string
-          title: Text
-      required:
-      - ts
-      - role
-      - text
-    MergedTranscript:
-      type: object
-      title: MergedTranscript
-      description: 'The post-call merged transcript: both sides of the call on one timeline, built from the dual-channel call recording after the call ends. A fuller record than the live transcript_full — see GET /calls/{call_id}/transcript-merged.'
-      properties:
-        version:
-          type: integer
-          title: Version
-          examples:
-          - 1
-        duration_ms:
-          type: integer
-          title: Duration Ms
-        calibration_delta_ms:
-          type: number
-          title: Calibration Delta Ms
-          description: 0 whenever both sides came off one recording; non-zero only on the single-channel fallback, where the two sources have to be aligned.
-        turns:
-          type: array
-          title: Turns
-          items:
-            $ref: '#/components/schemas/MergedTranscriptTurn'
-      required:
-      - version
-      - duration_ms
-      - calibration_delta_ms
-      - turns
-    AnswerResponse:
-      type: object
-      title: AnswerResponse
-      properties:
-        delivered:
-          type: boolean
-          title: Delivered
-        reason:
-          type: string
-          title: Reason
-          enum:
-          - delivered
-          - no_pending_request
-          description: '''delivered'' — a transport took the answer. ''no_pending_request'' — nothing was pending under this request_id (already answered, expired (~60s), or unknown) — the answer was silently dropped (not an error; a stale retry lands here safely).'
-      required:
-      - delivered
-      - reason
-    MergedTranscriptTurn:
-      type: object
-      title: MergedTranscriptTurn
-      description: One turn of the post-call merged transcript.
-      properties:
-        speaker:
-          type: string
-          title: Speaker
-          enum:
-          - bot
-          - hostess
-          description: bot = the agent; hostess = the other party — staff, receptionist or IVR (the name is historical and covers every callee-side voice).
-        start_ms:
-          type: integer
-          title: Start Ms
-        end_ms:
-          type: integer
-          title: End Ms
-        text:
-          type: string
-          title: Text
-        source:
-          type: string
-          title: Source
-          enum:
-          - deepgram_batch_multichannel
-          - deepgram_live_multichannel
-          - deepgram_batch
-          - deepgram_live
-          description: 'Where the turn came from: deepgram_batch_multichannel = the dual-channel recording transcribed per channel (the normal case — exact timing on one clock); deepgram_live_multichannel = per-channel live STT; deepgram_batch = a single-channel recording (bot side only); deepgram_live = live STT (callee side).'
-        words:
-          type: array
-          title: Words
-          items:
-            type: object
-            properties:
-              start_ms:
-                type: integer
-              end_ms:
-                type: integer
-              text:
-                type: string
-          description: Per-word timings, when the source provides them.
-        overlap_with_next:
-          type: boolean
-          title: Overlap With Next
-          description: This turn overlapped the next one in time (cross-talk). When true, end_ms has been trimmed to the next turn's start_ms; the untrimmed value is in original_end_ms.
-        original_end_ms:
-          type: integer
-          title: Original End Ms
-          description: The pre-trim end_ms, present only when overlap_with_next is true.
-        timing_estimated:
-          type: boolean
-          title: Timing Estimated
-          description: The text is real but the milliseconds are a reading order, not a measurement — don't plot such turns on a timeline.
-      required:
-      - speaker
-      - start_ms
-      - end_ms
-      - text
-      - source
-    CallResponse:
-      type: object
-      title: CallResponse
-      description: POST /calls success response (201, or 202 on deployments that queue before dialing).
-      properties:
-        call:
-          $ref: '#/components/schemas/CallDTO'
-        task_id:
-          type: string
-          title: Task Id
-        credits_reserved:
-          type: integer
-          title: Credits Reserved
-          description: The refundable HOLD placed at dial time (10). Not a charge — released at completion, minus credits_charge_on_success if the outcome is billable.
-          examples:
-          - 10
-        credits_charge_on_success:
-          type: integer
-          title: Credits Charge On Success
-          description: What the call actually costs if it reaches a billable outcome (10). Unsuccessful outcomes cost 0 and the whole hold comes back.
-          examples:
-          - 10
-        owner_pod:
-          type: string
-          title: Owner Pod
-      required:
-      - call
-      - task_id
-      - credits_reserved
-      - owner_pod
-    AnswerRequest:
-      type: object
-      title: AnswerRequest
-      description: Answer a pending mid-call question. Exactly one of `answer` or `outcome` must be given — never both, never neither (server-side model_validator rejects both cases with 'provide exactly one of answer or outcome'). When `outcome` is given, `request_id` is also required (server rejects with 'outcome requires request_id' otherwise) — it disambiguates which pending ask_user is being closed out when several are in flight on the same call.
-      properties:
-        answer:
-          anyOf:
-          - type: string
-            minLength: 1
-            maxLength: 4000
-          - type: 'null'
-          title: Answer
-          description: Free text the bot will dictate to the operator (mode=voice, the default) or act on silently (mode=context). Mutually exclusive with `outcome`.
-        outcome:
-          anyOf:
-          - type: string
-            enum:
-            - timeout
-            - transport_failure
-          - type: 'null'
-          title: Outcome
-          description: Closed client-side outcome when the observed ask_user request cannot receive an answer. Requires `request_id`. Mutually exclusive with `answer`.
-        request_id:
-          anyOf:
-          - type: string
-            maxLength: 64
-          - type: 'null'
-          title: Request Id
-          description: Disambiguates which pending ask_user this answers, when several are in flight on the same call. Required when `outcome` is set; optional with `answer` (falls back to FIFO — oldest pending — when omitted).
-        mode:
-          type: string
-          enum:
-          - voice
-          - context
-          default: voice
-          title: Mode
-          description: '''voice'' (default): the bot speaks `answer` aloud to the operator. ''context'': silent guidance — the bot acts on `answer` without voicing it (e.g. concierge IVR navigation hints). Only meaningful with `answer`, not `outcome`.'
-      oneOf:
-      - required:
-        - answer
-        not:
-          required:
-          - outcome
-      - required:
-        - outcome
-        - request_id
-        not:
-          required:
-          - answer
     CallCreateRequest:
       type: object
       title: CallCreateRequest
@@ -1438,46 +1481,3 @@ components:
           slots:
             type: object
             minProperties: 1
-    QueuedCallResponse:
-      type: object
-      title: QueuedCallResponse
-      description: POST /calls 202 Accepted body for the FREEFORM path ONLY, on deployments that queue before dialing. The call was persisted and credits reserved but NOT dialed yet — the drainer dials it later at the global rate limit. Poll GET /calls/{call_id} until status leaves 'queued'. Distinct from SkillRunResponse (the structured path's own 202 shape) — this is a separate, much smaller envelope with no owner_pod/call_sid fields.
-      properties:
-        call_id:
-          type: string
-          title: Call Id
-          examples:
-          - c_abc123
-        queue_id:
-          type: string
-          title: Queue Id
-        position:
-          type: integer
-          title: Position
-          description: FIFO place in the queue (0 == front). Counts entries still pending or currently being dialed (warming), so this can read 0 while the entry just ahead is mid-dial.
-          examples:
-          - 0
-        status:
-          type: string
-          title: Status
-          enum:
-          - queued
-          default: queued
-        credits_reserved:
-          type: integer
-          title: Credits Reserved
-          description: The refundable HOLD already placed for this queued call. 0 for a GATEWAY-MEDIATED request (the normal public-API case) — the gateway holds it instead.
-          examples:
-          - 10
-          - 0
-        credits_charge_on_success:
-          type: integer
-          title: Credits Charge On Success
-          description: What the call costs if it reaches a billable outcome (10).
-          examples:
-          - 10
-      required:
-      - call_id
-      - queue_id
-      - position
-      - status
