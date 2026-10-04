@@ -81,82 +81,6 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    ErrorResponse:
-      properties:
-        success:
-          type: boolean
-          title: Success
-          description: Always false for errors
-          default: false
-        error:
-          type: string
-          title: Error
-          description: Error message
-        error_code:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Error Code
-          description: Error category code (VALIDATION_ERROR, MODEL_ERROR, EXTERNAL_API_ERROR, etc.)
-        request_id:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Request Id
-          description: Request ID for tracing
-        validation_timestamp:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Validation Timestamp
-          description: UTC timestamp when error response was produced (ISO 8601).
-        detail:
-          anyOf:
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          title: Detail
-          description: Additional error details
-      type: object
-      required:
-      - error
-      title: ErrorResponse
-      description: Error response model.
-      examples:
-      - success: false
-        error: API key required. Include X-API-Key header.
-        error_code: AUTHENTICATION_ERROR
-        request_id: ad33009a-fdfe-4e25-9650-4a49099c3d4a
-      - success: false
-        error: Invalid or revoked API key
-        error_code: AUTHENTICATION_ERROR
-        request_id: 25b104f0-9ad0-4fc7-8530-c5d5ff8d9698
     UsageResponse:
       properties:
         tier:
@@ -250,3 +174,79 @@ components:
         reset_date: '2026-03-01'
         period: monthly
         status: active
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    ErrorResponse:
+      properties:
+        success:
+          type: boolean
+          title: Success
+          description: Always false for errors
+          default: false
+        error:
+          type: string
+          title: Error
+          description: Error message
+        error_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error Code
+          description: Error category code (VALIDATION_ERROR, MODEL_ERROR, EXTERNAL_API_ERROR, etc.)
+        request_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Request Id
+          description: Request ID for tracing
+        validation_timestamp:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Validation Timestamp
+          description: UTC timestamp when error response was produced (ISO 8601).
+        detail:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Detail
+          description: Additional error details
+      type: object
+      required:
+      - error
+      title: ErrorResponse
+      description: Error response model.
+      examples:
+      - success: false
+        error: API key required. Include X-API-Key header.
+        error_code: AUTHENTICATION_ERROR
+        request_id: ad33009a-fdfe-4e25-9650-4a49099c3d4a
+      - success: false
+        error: Invalid or revoked API key
+        error_code: AUTHENTICATION_ERROR
+        request_id: 25b104f0-9ad0-4fc7-8530-c5d5ff8d9698
