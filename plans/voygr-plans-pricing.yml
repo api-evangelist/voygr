@@ -101,3 +101,35 @@ enterprise:
     Enrichment) are marketed on voygr.tech behind "Request a demo" with no
     published price. A `tier` value of `enterprise` exists in the API's
     UsageResponse schema, but no enterprise pricing is published.
+x-canonical:
+  generated: '2026-10-08'
+  vocabulary: all/0-working/economics/plans-canonical.yml
+  models:
+  - free
+  - subscription
+  units: []
+  plans:
+  - name: Free
+    access: other
+    model: free
+    model_how: derived
+    units: []
+    periods: []
+  - name: 1K credit pack
+    access: other
+    model: subscription
+    model_how: derived
+    units: []
+    periods: []
+  - name: 2.5K credit pack
+    access: other
+    model: subscription
+    model_how: derived
+    units: []
+    periods: []
+  - name: 5K credit pack
+    access: other
+    model: subscription
+    model_how: derived
+    units: []
+    periods: []
