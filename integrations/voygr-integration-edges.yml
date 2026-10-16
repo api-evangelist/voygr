@@ -14,7 +14,7 @@ edges:
     registered_name: io.github.voygr-tech/placecall
     register_id: io.github.voygr-tech/placecall
     detected_by: sweep-agent-tools.py
-    detected: '2026-10-14'
+    detected: '2026-10-15'
   mcp_registry:
     servers:
     - io.github.voygr-tech/placecall
