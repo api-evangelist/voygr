@@ -70,6 +70,21 @@ modified: '2026-10-06'
 tags:
 - Company
 - Location Intelligence
+- POI
+- Data Enrichment
+- Data Validation
+- Geospatial
+- Places
+- AI Agents
+- Agent Skills
+- Voice AI
+- Telephony
+- Outbound Calls
+- Business Validation
+- Y Combinator
+tags_raw:
+- Company
+- Location Intelligence
 - POI Data
 - Data Enrichment
 - Data Validation
@@ -151,7 +166,7 @@ apis:
     point this entry at a different contract.
   tags:
   - Data Validation
-  - POI Data
+  - POI
   - Places
   - Location Intelligence
   - business-status
@@ -161,6 +176,7 @@ apis:
   - places
   - location-intelligence
   - business-status
+  - POI Data
   properties:
   - type: Documentation
     url: https://github.com/voygr-tech/dev-tools#readme
