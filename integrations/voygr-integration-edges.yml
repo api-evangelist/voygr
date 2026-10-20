@@ -1,4 +1,64 @@
 edges:
+- partner_name: PyPI
+  partner: pypi
+  partner_match: register
+  type: register
+  direction: provider-built
+  category: official SDK (Python)
+  evidence: https://pypi.org/project/voygr/
+  channel: package-registry
+  relationship: distribution-channel
+  contract_reference:
+    register: PyPI (public registry JSON)
+    spec_file: null
+    language: Python
+    packages:
+    - name: voygr
+      version: 0.2.1
+      released: '2026-04-06'
+      released_field: upload_time
+      lapsed: false
+      page: https://pypi.org/project/voygr/
+      repo_leg: domain:voygr.tech
+      publisher_leg: email:voygr.tech
+      matched_by: domain
+    current: true
+    signal_note: 'an official package on the registry: distribution, not an integration; lapsed = no release in
+      24 months'
+    detected_by: sweep-official-sdks.py
+    detected: '2026-10-18'
+  detected_by: sweep-official-sdks.py
+  first_seen: '2026-10-18'
+- partner_name: PyPI
+  partner: pypi
+  partner_match: register
+  type: register
+  direction: provider-built
+  category: official CLI (PyPI)
+  evidence: https://pypi.org/project/voygr/
+  channel: package-registry
+  relationship: distribution-channel
+  contract_reference:
+    register: PyPI (public package index)
+    spec_file: null
+    packages:
+    - name: voygr
+      version: 0.2.1
+      released: '2026-04-06'
+      released_field: upload_time
+      lapsed: false
+      page: https://pypi.org/project/voygr/
+      cli: 'PyPI name/summary: CLI for the Voygr Business Validation API'
+      repo_leg: domain:voygr.tech
+      publisher_leg: email:voygr.tech
+      matched_by: domain
+    current: true
+    signal_note: 'the provider''s own command-line tool on a package manager: distribution, not an integration;
+      lapsed = no release in 24 months or deprecated / disabled by the manager'
+    detected_by: sweep-official-clis.py
+    detected: '2026-10-20'
+  detected_by: sweep-official-clis.py
+  first_seen: '2026-10-20'
 - partner_name: MCP Registry
   partner: mcp
   partner_match: register
@@ -30,41 +90,16 @@ edges:
   - remote-domain
   detected_by: sweep-agent-tools.py
   first_seen: '2026-10-14'
-- partner_name: PyPI
-  partner: pypi
-  partner_match: register
-  type: register
-  direction: provider-built
-  category: official SDK (Python)
-  evidence: https://pypi.org/project/voygr/
-  channel: package-registry
-  relationship: distribution-channel
-  contract_reference:
-    register: PyPI (public registry JSON)
-    spec_file: null
-    language: Python
-    packages:
-    - name: voygr
-      version: 0.2.1
-      released: '2026-04-06'
-      released_field: upload_time
-      lapsed: false
-      page: https://pypi.org/project/voygr/
-      repo_leg: domain:voygr.tech
-      publisher_leg: email:voygr.tech
-      matched_by: domain
-    current: true
-    signal_note: 'an official package on the registry: distribution, not an integration; lapsed = no release in
-      24 months'
-    detected_by: sweep-official-sdks.py
-    detected: '2026-10-18'
-  detected_by: sweep-official-sdks.py
-  first_seen: '2026-10-18'
 generated: '2026-10-14'
 method: searched
 checked:
 - https://api.nuget.org/v3
+- https://cdn.winget.microsoft.com/cache
 - https://crates.io/api/v1
+- https://formulae.brew.sh/api/cask.json
+- https://formulae.brew.sh/api/formula.json
+- https://github.com/ScoopInstaller/Extras
+- https://github.com/ScoopInstaller/Main
 - https://proxy.golang.org
 - https://pypi.org/pypi
 - https://registry.modelcontextprotocol.io/v0/servers
